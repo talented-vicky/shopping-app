@@ -1,0 +1,18 @@
+<%- include('includes/head.ejs')%>
+    <link rel="stylesheet" href="/css/product.css">
+</head>
+
+<body>
+    <%- include('includes/nav.ejs')%>
+    
+    <main>
+        <form class="form" action="/admin/product" method="post">
+            <div class="form__container">
+                <label for="tt">Name</label>
+                <input type="text" name="title" id="tt">
+            </div>
+            <button type="submit"> Add Product</button>
+        </form>
+    </main>
+
+<%- include('includes/tail.ejs')%>
