@@ -13,4 +13,7 @@ router.get('/add-product', prodController.getAddProduct);
 // here, its /admin/product
 router.post('/product', prodController.postAddProduct);
 
+// this one is /admin/show-product
+router.get('/show-product', prodController.getShowProduct);
+
 module.exports = router
