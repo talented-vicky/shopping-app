@@ -1,5 +1,5 @@
 .form {
-    width: 15rem;
+    width: 20rem;
     margin: 0 auto;
 }
 .form__container {
@@ -10,9 +10,17 @@
 .form__container label {
     margin-bottom: .4rem;
 }
-.form__container input {
-    border: 1px solid #2c2ccc;
+.form__container input,
+.form__container textarea {
+    border: 1px solid #8282f5;
+    font: inherit;
     border-radius: 2px;
+    padding: .4rem;
+}
+
+.form__container input:focus,
+.form__container textarea:focus {
+    outline-color: #2c2ccc;
 }
 button {
     border: 1px solid #2c2ccc;
@@ -27,3 +35,7 @@ button:active {
     color: white;
     background-color: #2c2ccc;
 }
+
+
+
+/* remember functionality first, styles later */

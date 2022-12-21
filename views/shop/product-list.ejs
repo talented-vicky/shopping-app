@@ -13,14 +13,17 @@
                             <h1 class="product__title"><%= product.title %></h1>
                         </header>
                         <div class="card__image">
-                            <img src="" alt="A book">
+                            <img src="<%= product.imageUrl %>" alt="<%= product.title %>">
                         </div>
                         <div class="card__content">
-                            <h2 class="product__price">$23.55</h2>
-                            <p class="product__description">An interesting book with some bias but then good to read</p>
+                            <h2 class="product__price">$<%= product.price %></h2>
+                            <p class="product__description"><%= product.description %></p>
                         </div>
                         <div class="card__actions">
-                            <button class="btn">Add to Cart</button>
+                            <a href="/products/<%= product.id %>" class="btn"> 
+                                Details
+                            </a> <!-- a get request -->
+                            <%- include('../includes/add-to-cart.ejs', {prod: product}) %>
                         </div>
                     </article>
                 <% }) %>
