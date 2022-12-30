@@ -7,6 +7,7 @@ const shopRoutes = require('./routes/shop')
 
 const errorController = require('./controllers/error');
 
+const mongoDBConnect = require('./helper/db').mongoDBConnect
 const app = express();
 
 app.use(bp.urlencoded({extended: false}));
@@ -16,11 +17,13 @@ app.set('view engine', 'ejs')
 app.set('views', 'views')
 
 app.use('/admin', adminRoutes) //filtering all paths from adminRoutes
-
 app.use(shopRoutes) // its ideal this comes before admin routes
+
 app.use(errorController.errorPage)
 
-app.listen(4000) //this creates server and listens too
+mongoDBConnect(() => {
+    app.listen(4000)
+})
 
 // always remember the data passed into a post request in a form is available
 // via it's input fields and can hence be retrieved via the body using all
@@ -293,10 +296,3 @@ app.listen(4000) //this creates server and listens too
 // const result = parseFloat(test)
 // console.log(result)
 
-// const test = [3, 2, 5, 3, 11]
-// // for(check of test){
-// //     console.log(check)
-// // }
-// test.forEach(prod => {
-//     console.log(prod + 2)
-// })

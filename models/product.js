@@ -1,81 +1,75 @@
-const fs = require('fs')
-const path = require('path');
-
-const Cart = require('./cart')
-
-const p = path.join(
-    path.dirname(require.main.filename), 
-    'data', 
-    'products.json'
-);
-
-const helperFunc = callBack => {
-    fs.readFile(p, (err, content) => {
-        if(err) { 
-            return callBack([])  //returns an empty array
-        } 
-        callBack(JSON.parse(content)); // an array of objects
-    })
-}
+const mongodb = require('mongodb')
+const getDb = require('../helper/db').getDb
 
 module.exports = class Product {
-    constructor(id, tit, img, des, price){
-        this.id = id,
+    constructor(tit, img, price, des, id){
         this.title = tit,
         this.imageUrl = img,
+        this.price = price,
         this.description = des,
-        this.price = price
+        this._id = id ? new mongodb.ObjectId(id) : null 
+        // calling auto assigned mongodb Id and setting it as a parameter
+        // then set null if that parameter doesn't already exist
     }
-
+ 
     save() {
-        helperFunc(product => {
-            if(this.id){ 
-                // if there already is an id, which implied the prod already exists
-                const existingProdInd = product.findIndex(prod => prod.id === this.id)
-                
-                // pulling all prods into updatedProd
-                const updatedProd = [...product] 
-                
-                // replacing this (product with found id) with newly edited product
-                updatedProd[existingProdInd] = this 
-                fs.writeFile(p, JSON.stringify(updatedProd), err => console.log(err))
-            }else{
-                // here we found no id & hence assigning a random num for the new id
-                this.id = Math.random().toString()
-                product.push(this)
-                fs.writeFile(p, JSON.stringify(product), err => console.log(err) );
-            }
-        })
+        const db = getDb()
+        let dbUpdate;
+        if(this._id){ // confirming if an element with this id exists
+            dbUpdate = db
+                .collection('products')
+                .updateOne({_id: this._id}, {$set: this})
+        }else{
+            dbUpdate = db
+                .collection('products')
+                .insertOne(this)
+        }
+        return dbUpdate 
+            .then(result => {
+                console.log(result)
+            })
+            .catch(err => {
+                console.log(err)
+            })
+    };
+
+    static fetchAll() {
+        const db = getDb()
+        return db.collection('products')
+            .find()
+            .toArray()
+            .then(products => {
+                return products
+            })
+            .catch(err => {
+                console.log(err)
+            })
+    };
+
+    static findbyId(id) {
+        const db = getDb()
+        return db.collection('products')
+            .find({_id: new mongodb.ObjectId(id)})
+            .next() // telling mongodb to get the first
+            .then(product => {
+                return product
+            })
+            .catch(err => {
+                console.log(err)
+            })
     };
 
     static deletebyId(id) {
-        helperFunc(products => {
-            // the above is the product to delete so as to fetch its price
-            const product = products.find(prod => prod.id === id)
-            console.log(product)
-            
-            // this returns all but the particular product not in the prods array
-            const updatedProd = products.filter(elem => elem.id !== id)            
-            
-            fs.writeFile(p, JSON.stringify(updatedProd), err => {
-                if(!err){
-                    Cart.deleteProduct(id, product.price)
-                }
+        const db = getDb()
+        return db.collection('products')
+            .deleteOne({ _id: new mongodb.ObjectId(id)})
+            .then(() => {
+                alert('Deleted!')
             })
-        })
+            .catch(err => {
+                console.log(err)
+            })
     }
-    
-    static fetchAll(cb) {
-        helperFunc(cb)
-    };
-
-    static fetchById(id, cb) {
-        helperFunc(products => {
-            // once I call helperFunc, it's argument is a an array of js objects
-            const product = products.find(prod => prod.id === id)
-            cb(product)
-        })
-    };
 }
 
 
