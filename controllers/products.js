@@ -1,4 +1,5 @@
 const Product = require('../models/product')
+const User = require('../models/user')
 
 /* 
 ADMIN CONTROLLERS
@@ -21,7 +22,11 @@ exports.postAddProduct = (req, res, next) => {
     const des = req.body.description
     // I'm extracting the name tags from the form body of 
     // the add-product.ejs file
-    const product = new Product(title, img, price, des)
+    const product = new Product(title, img, price, des, null, req.user._id)
+    // passing null for product id since we don't have it when creating a new prod
+    // and req.user._id to make reference to the user's id which we passed in req
+    // the userId was possible 'cause of the middleware in app.js
+    
     product.save()
         .then(result => console.log('Successfully created product'))
         .catch(err => console.log(err))
@@ -160,35 +165,46 @@ exports.showSingleProduct = (req, res, next) => {
         })
 }
 
-// exports.showCart = (req, res, next) => {
-//     Cart.getCart(cart => {
-//         Product.fetchAll(prods => {
-//             const cartProducts = []
-//             prods.forEach(prod => {
-//                 console.log(prod)
-//                 const cartProdData = cart.products.find(item => item.id === prod.id)
-//                 if(cartProdData){
-//                     cartProducts.push({prodData: prod, qty: cartProdData.qty})
-//                 }
-//                 // the prod value of prodData has title, imageUrl, price and 
-//                 // description as it's object parameters
-//             })
-//             res.render('shop/cart', {
-//                 pageTitle: 'Cart Page',
-//                 path: '/user-cart',
-//                 products: cartProducts
-//             })
-//         })
-//     })
-// }
+exports.showCart = (req, res, next) => {
+    req.user.getCart()
+    // this gives access to the cart and its content
+        .then(cart => {
+            Product.fetchAll(prods => {
+                const cartProducts = []
+                prods.forEach(prod => {
+                    console.log(prod)
+                    const cartProdData = cart.products.find(item => item.id === prod.id)
+                    if(cartProdData){
+                        cartProducts.push({prodData: prod, qty: cartProdData.qty})
+                    }
+                    // the prod value of prodData has title, imageUrl, price and 
+                    // description as it's object parameters
+                })
+                res.render('shop/cart', {
+                    pageTitle: 'Cart Page',
+                    path: '/user-cart',
+                    products: cartProducts
+                })
+        })
+        .catch(err => console.log(err))
+    })
+}
 
-// exports.postCart = (req, res, next) => {
-//     const productId = req.body.prodId;
-//     Product.fetchById(productId, prod => {
-//         Cart.addProduct(productId, prod.price)
-//     })
-//     res.redirect('/')
-// }
+exports.postCart = (req, res, next) => {
+    const productId = req.body.prodId;
+    // this is from the hidden input in the form
+
+    Product.findbyId(productId)
+        // the above yields a product
+        .then(product => {
+            return req.user.addtoCart(product)
+        })
+        .then()
+        .catch(err => {
+            console.log(err)
+        })
+    res.redirect('/')
+}
 
 // exports.postdeleteCart = (req, res, next) => {
 //     const productId = req.body.prodId;

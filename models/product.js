@@ -2,14 +2,15 @@ const mongodb = require('mongodb')
 const getDb = require('../helper/db').getDb
 
 module.exports = class Product {
-    constructor(tit, img, price, des, id){
+    constructor(tit, img, price, des, id, userId){
         this.title = tit,
         this.imageUrl = img,
         this.price = price,
         this.description = des,
-        this._id = id ? new mongodb.ObjectId(id) : null 
+        this._id = id ? new mongodb.ObjectId(id) : null,
         // calling auto assigned mongodb Id and setting it as a parameter
         // then set null if that parameter doesn't already exist
+        this.userId = userId
     }
  
     save() {
@@ -50,7 +51,10 @@ module.exports = class Product {
         const db = getDb()
         return db.collection('products')
             .find({_id: new mongodb.ObjectId(id)})
-            .next() // telling mongodb to get the first
+            .next() 
+            // .find() always returns a cursor so we're simply getting the first
+            // .findOne({_id: new mongodb.ObjectId(id)})
+            //the above wouldn't require a next() since there's no cursor
             .then(product => {
                 return product
             })
@@ -71,7 +75,6 @@ module.exports = class Product {
             })
     }
 }
-
 
 // remember a normal class method is called on the object itself
 // a static method (on the other hand) is called on the instantiated class

@@ -12,9 +12,9 @@ router.get('/products', shopController.showProducts);
 router.get('/products/:prodId', shopController.showSingleProduct);
 //prodId is what we're fetching from the .ejs file
 
-// router.get('/cart', shopController.showCart);
+router.get('/cart', shopController.showCart);
 
-// router.post('/cart', shopController.postCart);
+router.post('/add-cart', shopController.postCart);
 
 // router.post('/cart-delete', shopController.postdeleteCart);
 

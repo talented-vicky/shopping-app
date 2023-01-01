@@ -1,5 +1,5 @@
-<form action="/cart" method="post">
+<form action="/add-cart" method="post">
+    <input type="hidden" name="prodId" value="<%= prod._id %>">
     <button type="submit" class="btn">Add to Cart</button>
-    <input type="hidden" name="prodId" value="<%= prod.id %>">
     <!-- this input is just so we can fetch this info via this form body -->
 </form>
