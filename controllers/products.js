@@ -168,26 +168,14 @@ exports.showSingleProduct = (req, res, next) => {
 exports.showCart = (req, res, next) => {
     req.user.getCart()
     // this gives access to the cart and its content
-        .then(cart => {
-            Product.fetchAll(prods => {
-                const cartProducts = []
-                prods.forEach(prod => {
-                    console.log(prod)
-                    const cartProdData = cart.products.find(item => item.id === prod.id)
-                    if(cartProdData){
-                        cartProducts.push({prodData: prod, qty: cartProdData.qty})
-                    }
-                    // the prod value of prodData has title, imageUrl, price and 
-                    // description as it's object parameters
-                })
-                res.render('shop/cart', {
-                    pageTitle: 'Cart Page',
-                    path: '/user-cart',
-                    products: cartProducts
-                })
+        .then(cartProducts => {
+            res.render('shop/cart', {
+                pageTitle: 'Cart Page',
+                path: '/user-cart',
+                products: cartProducts
+            })
         })
         .catch(err => console.log(err))
-    })
 }
 
 exports.postCart = (req, res, next) => {

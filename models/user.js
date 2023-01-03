@@ -59,8 +59,24 @@ module.exports = class User {
     }
 
     getCart(){
-        return this.cart
-        // this simply gives access to the cart when this method is called
+        const db = getDB()
+        const prodIds = this.cart.items.map(i => {
+            return i.prodId
+        }) // this actually returns an array
+
+        return db.collection('products')
+            .find({_id: {$in: prodIds}}) //chekn if id exists in prodIds array
+            .toArray() // converts output to js array
+            .then(prods => {
+                return prods.map(prod => {
+                    return {
+                        ...prod, 
+                        qty: this.cart.items.find(i => {
+                            return i.prodId.toString() === prod._id.toString()
+                        }).qty
+                    }
+                })
+            })
     }
 
     static findbyId(userId){

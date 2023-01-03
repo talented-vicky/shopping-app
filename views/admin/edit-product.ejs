@@ -1,5 +1,6 @@
 <%- include('../includes/head.ejs')%>
     <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/main.css">
 </head>
 
 <body>
@@ -36,7 +37,7 @@
             <% if(editing) { %>
                 <input type="hidden" name="productId" value="<%= prod._id %>">
             <% } %>
-            <button type="submit"> <% if(editing) { %>Update Product<% } else { %>Add Product<% } %> </button>
+            <button class="btn" type="submit"> <% if(editing) { %>Update Product<% } else { %>Add Product<% } %> </button>
         </form>
     </main>
 

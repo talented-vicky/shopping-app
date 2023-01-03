@@ -22,20 +22,6 @@
 .form__container textarea:focus {
     outline-color: #2c2ccc;
 }
-button {
-    border: 1px solid #2c2ccc;
-    color: #2c2ccc;
-    background: white;
-    border-radius: .3rem;
-    cursor: pointer;
-    padding: .4rem;
-}
-button:hover,
-button:active {
-    color: white;
-    background-color: #2c2ccc;
-}
-
 
 
 /* remember functionality first, styles later */
