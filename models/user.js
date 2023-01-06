@@ -78,6 +78,71 @@ module.exports = class User {
                 })
             })
     }
+    /* IMPORTANT */
+    // if there are cart items on user object but no products in the database
+    // cause of deletion => update user cart to match database products
+    // i.e if we have an empty product array and we have items in the user
+    // cart, we simply reset the cart
+    // or if we have less products in db than we have in the cart, we wanna 
+    // find the difference and update the cart (not products in database)
+
+    deleteProdFromCart(productId) {
+        const updatedCart = this.cart.items.filter(i => {
+            return i.prodId.toString() !== productId.toString()
+            // return i.prodId.toString() === productId.toString()
+            // the above would yield elements that meet the callback function
+        })
+        const db = getDB()
+        return db.collection('users')
+            .updateOne(
+                {_id: new mongodb.ObjectId(this._id)},
+                {$set: {cart: {items: updatedCart}}}
+            )
+            .then(result => {
+                console.log('deleted from cart successfully')
+            })
+            .catch(err => {
+                console.log(err)
+            })
+    }
+
+    addOrder(){
+        const db = getDB()
+        return this.getCart()
+        // fetch cart so as to pull all products in it
+            .then(prods => {
+                // save product infor in items key and embed user info also
+                const orders = {
+                    items: prods,
+                    user: {
+                        _id: new mongodb.ObjectId(this._id),
+                        name: this.firstname
+                    }
+                }
+                return db.collection('orders').insertOne(orders)
+            })
+            .then(result => {
+                this.cart = {items: []}
+                return db.collection('users').updateOne(
+                        {_id: new mongodb.ObjectId(this._id)},
+                        {$set: {cart: {items: []}}}
+                    )
+                // set cart empty after placed in order collection
+            })
+            .catch(err => console.log(err))
+    }
+
+    getOrder(){
+        const db = getDB()
+        return db.collection('orders')
+            .find({"user._id": new mongodb.ObjectId(this._id)})
+            // the 1st param is us accessing the _id key nested in user obj
+            .toArray()
+            .then()
+            .catch(err => {
+                console.log(err)
+            })
+    }
 
     static findbyId(userId){
         const db = getDB()

@@ -185,7 +185,7 @@ exports.postCart = (req, res, next) => {
     Product.findbyId(productId)
         // the above yields a product
         .then(product => {
-            return req.user.addtoCart(product)
+            req.user.addtoCart(product)
         })
         .then()
         .catch(err => {
@@ -193,29 +193,38 @@ exports.postCart = (req, res, next) => {
         })
     res.redirect('/')
 }
+/* IMPORTANT */
+// add functionality to increase or reduce the cart on cart page
 
-// exports.postdeleteCart = (req, res, next) => {
-//     const productId = req.body.prodId;
-//     Product.fetchById(productId, prod => {
-//         const prodPrice = prod.price
-//         Cart.deleteProduct(productId, prodPrice)
-//         res.redirect('/cart')
-//     })
-//     // the prodId in req.body is coming from the input name 
-//     // in form (cart.ejs file)
+exports.postdeleteCart = (req, res, next) => {
+    const productId = req.body.prodId;
+
+    req.user.deleteProdFromCart(productId)
+        .then(result => {
+            res.redirect('/cart')
+        })
+        .catch(err => console.log(err))
     
-//     // Cart.deleteProduct(productId)
-//     // using the Cart model requires the product price as a second argument
-//     // so we need to get that from the product model, hence the need for
-//     // nested callbacks
-// }
+}
 
-// exports.showOrders = (req, res, next) => {
-//     res.render('shop/orders', {
-//         pageTitle: 'Your Order',
-//         path: '/user-orders'
-//     })
-// }
+exports.showOrders = (req, res, next) => {
+    req.user.getOrder()
+        .then(ordersData => {
+            res.render('shop/orders', {
+                pageTitle: 'Your Order',
+                path: '/user-orders',
+                orders: ordersData
+            })
+        })
+}
+
+exports.postOrders = (req, res, next) => {
+    req.user.addOrder()
+        .then(result => {
+            res.redirect('/cart')
+        })
+        .catch(err => console.log(err))
+}
 
 // exports.showCheckout = (req, res, next) => {
 //     res.render('shop/checkout', {
