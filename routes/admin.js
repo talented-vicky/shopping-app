@@ -9,9 +9,6 @@ router.get('/edit-product', prodController.getAddProduct);
 
 // here, its /admin/product
 router.post('/product', prodController.postAddProduct);
-// note a get request simply links a path or url while a
-// post req makes changes or modifications before pulling some stuff
-// more like you've made changes before fetching from the server
 
 // this one is /admin/show-product
 router.get('/show-product', prodController.getShowProduct);

@@ -20,21 +20,22 @@ exports.postAddProduct = (req, res, next) => {
     const img = req.body.imageUrl
     const price = req.body.price
     const des = req.body.description
-    // I'm extracting the name tags from the form body of 
-    // the add-product.ejs file
-    const product = new Product(title, img, price, des, null, req.user._id)
-    // passing null for product id since we don't have it when creating a new prod
-    // and req.user._id to make reference to the user's id which we passed in req
-    // the userId was possible 'cause of the middleware in app.js
+
+    const product = new Product({ 
+        title: title, imageUrl: img, price: price, description: des 
+    })
+    // keys point at prod schema while values point at const variable defined
     
     product.save()
-        .then(result => console.log('Successfully created product'))
+        .then(result => {
+            console.log('Successfully created product')
+            res.redirect('/')
+        })
         .catch(err => console.log(err))
-        res.redirect('/')
 }
 
 exports.getShowProduct = (req, res, next) => {
-    Product.fetchAll()
+    Product.find()
         .then(product => {
             res.render('admin/show-product', {
                 prods: product,
@@ -53,9 +54,8 @@ exports.getEditProduct = (req, res, next) =>{
     if(!editMode){
         return res.redirect('/')
     }
-    // fetching the value of the edit query param
     const productId = req.params.prodId
-    Product.findbyId(productId)
+    Product.findById(productId)
         .then(product => {
             if(!product){
                 res.redirect('/')
@@ -67,9 +67,7 @@ exports.getEditProduct = (req, res, next) =>{
                 prod: product
             })
         })
-        .catch(err => {
-            console.log(err)
-        })
+        .catch(err => console.log(err))
     // remember we have access to all the key values in the ejs files
 }
 
@@ -77,22 +75,26 @@ exports.postEditProduct = (req, res, next) => {
     const prodId = req.body.productId
     // I just fetched the id (when on edit mode) from the hidden 
     // input in edit-product.ejs
-    
     const updTitle = req.body.title
     const updImg = req.body.imageUrl
     const updPrice = req.body.price
     const updDes = req.body.description
-
-    const updProduct = new Product( updTitle, updImg, updPrice, updDes, prodId )    
     
-    updProduct.save()
+    Product.findById(prodId)
+        .then(product => {
+            product.title = updTitle 
+            product.imageUrl = updImg
+            product.price = updPrice
+            product.description = updDes
+            return product.save()
+            // note I called save on the result "product" not on model "Product"
+        })
         .then(result => {
             console.log('Successfully updated product')
+            res.redirect('/admin/show-product')
         })
-        .catch(err => {
-            console.log(err)
-        })
-        res.redirect('/admin/show-product')
+        .catch(err => console.log(err))
+        // mongoose does a bts update when're we call save on an existing obj
 }
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -102,7 +104,7 @@ exports.postDeleteProduct = (req, res, next) => {
     const productId = req.body.prodId
     // fetching prodId from the name field of the hidden input
 
-    Product.deletebyId(productId)
+    Product.findByIdAndDelete(productId)
         .then(prod => {
         console.log('product successfully deleted')
         res.redirect('admin/show-product')
@@ -110,7 +112,6 @@ exports.postDeleteProduct = (req, res, next) => {
         .catch(err => {
             console.log(err)
         })
-        res.redirect('/')
 }
 
 
@@ -120,7 +121,7 @@ exports.postDeleteProduct = (req, res, next) => {
 USER CONTROLLERS
 */
 exports.showIndex = (req, res, next) => {
-    Product.fetchAll()
+    Product.find()
         .then(product => {
             res.render('shop/index', {
                 prods: product, 
@@ -134,7 +135,7 @@ exports.showIndex = (req, res, next) => {
 }
 
 exports.showProducts = (req, res, next) => {
-    Product.fetchAll()
+    Product.find()
     .then(product => {
         res.render('shop/product-list', {
             prods: product, 
@@ -149,9 +150,7 @@ exports.showProducts = (req, res, next) => {
 
 exports.showSingleProduct = (req, res, next) => {
     const productId = req.params.prodId
-    // we're getting the params of the url from the shop.js showSingleProject
-    // routes file same way we use req.body.title/imageUrl to get name from a form
-    Product.findbyId(productId)
+    Product.findById(productId)
         .then(product => {
             res.render('shop/product-detail', {
                 prod: product,
@@ -165,70 +164,63 @@ exports.showSingleProduct = (req, res, next) => {
         })
 }
 
-exports.showCart = (req, res, next) => {
-    req.user.getCart()
-    // this gives access to the cart and its content
-        .then(cartProducts => {
-            res.render('shop/cart', {
-                pageTitle: 'Cart Page',
-                path: '/user-cart',
-                products: cartProducts
-            })
-        })
-        .catch(err => console.log(err))
-}
+// exports.showCart = (req, res, next) => {
+//     req.user.getCart()
+//     // this gives access to the cart and its content
+//         .then(cartProducts => {
+//             res.render('shop/cart', {
+//                 pageTitle: 'Cart Page',
+//                 path: '/user-cart',
+//                 products: cartProducts
+//             })
+//         })
+//         .catch(err => console.log(err))
+// }
 
-exports.postCart = (req, res, next) => {
-    const productId = req.body.prodId;
-    // this is from the hidden input in the form
+// exports.postCart = (req, res, next) => {
+//     const productId = req.body.prodId;
+//     // this is from the hidden input in the form
 
-    Product.findbyId(productId)
-        // the above yields a product
-        .then(product => {
-            req.user.addtoCart(product)
-        })
-        .then()
-        .catch(err => {
-            console.log(err)
-        })
-    res.redirect('/')
-}
-/* IMPORTANT */
-// add functionality to increase or reduce the cart on cart page
+//     Product.findbyId(productId)
+//         // the above yields a product
+//         .then(product => {
+//             req.user.addtoCart(product)
+//         })
+//         .then()
+//         .catch(err => {
+//             console.log(err)
+//         })
+//     res.redirect('/')
+// }
+// /* IMPORTANT */
+// // add functionality to increase or reduce the cart on cart page
 
-exports.postdeleteCart = (req, res, next) => {
-    const productId = req.body.prodId;
+// exports.postdeleteCart = (req, res, next) => {
+//     const productId = req.body.prodId;
 
-    req.user.deleteProdFromCart(productId)
-        .then(result => {
-            res.redirect('/cart')
-        })
-        .catch(err => console.log(err))
+//     req.user.deleteProdFromCart(productId)
+//         .then(result => {
+//             res.redirect('/cart')
+//         })
+//         .catch(err => console.log(err))
     
-}
+// }
 
-exports.showOrders = (req, res, next) => {
-    req.user.getOrder()
-        .then(ordersData => {
-            res.render('shop/orders', {
-                pageTitle: 'Your Order',
-                path: '/user-orders',
-                orders: ordersData
-            })
-        })
-}
+// exports.showOrders = (req, res, next) => {
+//     req.user.getOrder()
+//         .then(ordersData => {
+//             res.render('shop/orders', {
+//                 pageTitle: 'Your Order',
+//                 path: '/user-orders',
+//                 orders: ordersData
+//             })
+//         })
+// }
 
-exports.postOrders = (req, res, next) => {
-    req.user.addOrder()
-        .then(result => {
-            res.redirect('/cart')
-        })
-        .catch(err => console.log(err))
-}
-
-// exports.showCheckout = (req, res, next) => {
-//     res.render('shop/checkout', {
-//         pageTitle: 'Checkout Page',
-//         path: '/user-checkout'
-//     })
+// exports.postOrders = (req, res, next) => {
+//     req.user.addOrder()
+//         .then(result => {
+//             res.redirect('/cart')
+//         })
+//         .catch(err => console.log(err))
 // }
