@@ -12,15 +12,15 @@ router.get('/products', shopController.showProducts);
 //prodId is what we're fetching from the .ejs file
 router.get('/products/:prodId', shopController.showSingleProduct);
 
-// router.get('/cart', shopController.showCart);
+router.get('/cart', shopController.showCart);
 
-// router.post('/add-cart', shopController.postCart);
+router.post('/add-cart', shopController.postCart);
 
-// router.post('/cart-delete', shopController.postdeleteCart);
+router.post('/cart-delete', shopController.postdeleteCart);
 
-// router.get('/orders', shopController.showOrders);
+router.get('/orders', shopController.showOrders);
 
-// router.post('/create-order', shopController.postOrders);
+router.post('/create-order', shopController.postOrders);
 
 module.exports = router;
 

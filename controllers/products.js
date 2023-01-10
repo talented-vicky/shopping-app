@@ -1,5 +1,7 @@
 const Product = require('../models/product')
 const User = require('../models/user')
+const Order = require('../models/order')
+const product = require('../models/product')
 
 /* 
 ADMIN CONTROLLERS
@@ -22,7 +24,12 @@ exports.postAddProduct = (req, res, next) => {
     const des = req.body.description
 
     const product = new Product({ 
-        title: title, imageUrl: img, price: price, description: des 
+        title: title, imageUrl: img, price: price, 
+        description: des, userId: req.user 
+        // userId: req.user._id => would not be useful if I need more 
+        // data than just the id of the user
+        // userId: req.user => mongoose understands to store just 
+        // the user._id and not all values
     })
     // keys point at prod schema while values point at const variable defined
     
@@ -36,6 +43,11 @@ exports.postAddProduct = (req, res, next) => {
 
 exports.getShowProduct = (req, res, next) => {
     Product.find()
+        // .select('title price -_id')
+        // now I'm fetching just title and price, _id is automatically fetched
+        // so I had to exclude it if I didn't want to retrieve it 4rm database
+        // .populate('userId')
+        // the above is now the field I wanna display 4rm what I've selected
         .then(product => {
             res.render('admin/show-product', {
                 prods: product,
@@ -55,6 +67,7 @@ exports.getEditProduct = (req, res, next) =>{
         return res.redirect('/')
     }
     const productId = req.params.prodId
+
     Product.findById(productId)
         .then(product => {
             if(!product){
@@ -164,63 +177,84 @@ exports.showSingleProduct = (req, res, next) => {
         })
 }
 
-// exports.showCart = (req, res, next) => {
-//     req.user.getCart()
-//     // this gives access to the cart and its content
-//         .then(cartProducts => {
-//             res.render('shop/cart', {
-//                 pageTitle: 'Cart Page',
-//                 path: '/user-cart',
-//                 products: cartProducts
-//             })
-//         })
-//         .catch(err => console.log(err))
-// }
+exports.showCart = (req, res, next) => {
+    req.user.populate('cart.items.prodId')
+        .then(user => {
+            // console.log(user) uncomment this to undestand next line
+            cartProducts = user.cart.items
+            res.render('shop/cart', {
+                pageTitle: 'Cart Page',
+                path: '/user-cart',
+                products: cartProducts
+            })
+        })
+        .catch(err => console.log(err))
+}
 
-// exports.postCart = (req, res, next) => {
-//     const productId = req.body.prodId;
-//     // this is from the hidden input in the form
+exports.postCart = (req, res, next) => {
+    const productId = req.body.prodId;
+    // this is from the hidden input in the form
 
-//     Product.findbyId(productId)
-//         // the above yields a product
-//         .then(product => {
-//             req.user.addtoCart(product)
-//         })
-//         .then()
-//         .catch(err => {
-//             console.log(err)
-//         })
-//     res.redirect('/')
-// }
+    Product.findById(productId)
+        // the above yields a product
+        .then(product => {
+            req.user.addtoCart(product)
+            res.redirect('/')
+        })
+        .then()
+        .catch(err => {
+            console.log(err)
+        })
+}
 // /* IMPORTANT */
 // // add functionality to increase or reduce the cart on cart page
 
-// exports.postdeleteCart = (req, res, next) => {
-//     const productId = req.body.prodId;
+exports.postdeleteCart = (req, res, next) => {
+    const productId = req.body.prodId;
 
-//     req.user.deleteProdFromCart(productId)
-//         .then(result => {
-//             res.redirect('/cart')
-//         })
-//         .catch(err => console.log(err))
-    
-// }
+    req.user.deleteCart(productId)
+        .then(result => {
+            res.redirect('/cart')
+        })
+        .catch(err => console.log(err))
+}
 
-// exports.showOrders = (req, res, next) => {
-//     req.user.getOrder()
-//         .then(ordersData => {
-//             res.render('shop/orders', {
-//                 pageTitle: 'Your Order',
-//                 path: '/user-orders',
-//                 orders: ordersData
-//             })
-//         })
-// }
+exports.showOrders = (req, res, next) => {
+    Order.find()
+        .then(ordersData => {
+            res.render('shop/orders', {
+                pageTitle: 'Your Order',
+                path: '/user-orders',
+                orders: ordersData
+            })
+        })
+}
 
-// exports.postOrders = (req, res, next) => {
-//     req.user.addOrder()
-//         .then(result => {
-//             res.redirect('/cart')
-//         })
-//         .catch(err => console.log(err))
-// }
+exports.postOrders = (req, res, next) => {
+    req.user.populate('cart.items.prodId')
+        .then(cartItems => {
+            const products = cartItems.cart.items.map(item => {
+                // return {qty: item.qty, product: item.prodId}
+                // the above won't give the actual doc I need but just the id
+                return {qty: item.qty, product: {...item.prodId._doc}}
+            })
+            // console.log(products)
+            // the above prevents me from doing stuff like =>
+            // title: cartItems.cart.items.prodId.title
+            const order = new Order({
+                items: products,
+                user: {
+                    userId: req.user, // mongoose knows it'll get just the id
+                    name: req.user.name
+                }
+            })
+            return order.save()
+        })
+        .then(result => {
+            return req.user.clearCart()
+                .then(result => {
+                    res.redirect('/cart')
+                })
+        })
+        .catch(err => console.log(err))
+}

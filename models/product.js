@@ -17,6 +17,11 @@ const productSchema = new Schema({
     imageUrl: {
         type: String,
         required: true
+    },
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
     }
     // the order doesn't matter since its a js obj
 })
