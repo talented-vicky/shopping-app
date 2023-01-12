@@ -23,7 +23,9 @@
                             <a href="/products/<%= product._id %>" class="btn"> 
                                 Details
                             </a> <!-- a get request -->
-                            <%- include('../includes/add-to-cart.ejs', {prod: product}) %>
+                            <% if(isAuth) { %>
+                                <%- include('../includes/add-to-cart.ejs', {prod: product}) %>
+                            <% } %>
                         </div>
                     </article>
                 <% }) %>

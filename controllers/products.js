@@ -1,7 +1,6 @@
 const Product = require('../models/product')
 const User = require('../models/user')
 const Order = require('../models/order')
-const product = require('../models/product')
 
 /* 
 ADMIN CONTROLLERS
@@ -12,8 +11,9 @@ exports.getAddProduct = (req, res, next) => {
         pageTitle: 'Add Product',
         path: '/addEdit-product',
         // the above is the path in the nev.ejs file
-        editing: false
+        editing: false,
         // this is for => const editMode = req.query.edit boolean
+        isAuth: req.session.isLoggedIn
     })
 }
 
@@ -52,7 +52,8 @@ exports.getShowProduct = (req, res, next) => {
             res.render('admin/show-product', {
                 prods: product,
                 pageTitle: 'Admin All Products',
-                path: '/show-product'
+                path: '/show-product',
+                isAuth: req.session.isLoggedIn
             })
         })
         .catch(err => {
@@ -77,7 +78,8 @@ exports.getEditProduct = (req, res, next) =>{
                 pageTitle: 'Edit Product',
                 path: '/onlyEdit-product',
                 editing: editMode,
-                prod: product
+                prod: product,
+                isAuth: req.session.isLoggedIn
             })
         })
         .catch(err => console.log(err))
@@ -139,7 +141,8 @@ exports.showIndex = (req, res, next) => {
             res.render('shop/index', {
                 prods: product, 
                 pageTitle: 'Index Page',
-                path: '/'
+                path: '/',
+                isAuth: req.session.isLoggedIn
             })
         })
         .catch(err => {
@@ -153,7 +156,8 @@ exports.showProducts = (req, res, next) => {
         res.render('shop/product-list', {
             prods: product, 
             pageTitle: 'Shop Page',
-            path: '/user-products'
+            path: '/user-products',
+            isAuth: req.session.isLoggedIn
         })
     })
     .catch(err => {
@@ -168,8 +172,9 @@ exports.showSingleProduct = (req, res, next) => {
             res.render('shop/product-detail', {
                 prod: product,
                 pageTitle: product.title,
-                path: '/user-products' 
+                path: '/user-products' ,
                 // it'll seem as if we're still on products page
+                isAuth: req.session.isLoggedIn
             })
         })
         .catch(err => {
@@ -178,14 +183,16 @@ exports.showSingleProduct = (req, res, next) => {
 }
 
 exports.showCart = (req, res, next) => {
-    req.user.populate('cart.items.prodId')
+    req.user
+        .populate('cart.items.prodId')
         .then(user => {
             // console.log(user) uncomment this to undestand next line
             cartProducts = user.cart.items
             res.render('shop/cart', {
                 pageTitle: 'Cart Page',
                 path: '/user-cart',
-                products: cartProducts
+                products: cartProducts,
+                isAuth: req.session.isLoggedIn
             })
         })
         .catch(err => console.log(err))
@@ -212,7 +219,8 @@ exports.postCart = (req, res, next) => {
 exports.postdeleteCart = (req, res, next) => {
     const productId = req.body.prodId;
 
-    req.user.deleteCart(productId)
+    req.user
+        .deleteCart(productId)
         .then(result => {
             res.redirect('/cart')
         })
@@ -225,13 +233,15 @@ exports.showOrders = (req, res, next) => {
             res.render('shop/orders', {
                 pageTitle: 'Your Order',
                 path: '/user-orders',
-                orders: ordersData
+                orders: ordersData,
+                isAuth: req.session.isLoggedIn
             })
         })
 }
 
 exports.postOrders = (req, res, next) => {
-    req.user.populate('cart.items.prodId')
+    req.user
+        .populate('cart.items.prodId')
         .then(cartItems => {
             const products = cartItems.cart.items.map(item => {
                 // return {qty: item.qty, product: item.prodId}
@@ -251,7 +261,8 @@ exports.postOrders = (req, res, next) => {
             return order.save()
         })
         .then(result => {
-            return req.user.clearCart()
+            return req.user
+                .clearCart()
                 .then(result => {
                     res.redirect('/cart')
                 })
