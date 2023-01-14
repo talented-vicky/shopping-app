@@ -70,20 +70,7 @@ app.use(errorController.errorPage)
 mongoose.connect(database_connection_url)
     .then(conn => {
         console.log('Connected to mongoDB')
-        User.findOne()
-            .then(userF => {
-                if(!userF){
-                    const user = new User({
-                        name: 'talented_vicky',
-                        email: 'vickytest@gmail.com',
-                        cart: {
-                            items: []
-                        }
-                    })
-                    user.save()
-                }
-                app.listen(4000)
-            })
+        app.listen(4000)
     })
     .catch(err => {
         console.log(err)

@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 
 const shopController = require('../controllers/products');
+const authController = require('../middleware/auth')
 
 router.get('/', shopController.showIndex);
 
@@ -12,15 +13,15 @@ router.get('/products', shopController.showProducts);
 //prodId is what we're fetching from the .ejs file
 router.get('/products/:prodId', shopController.showSingleProduct);
 
-router.get('/cart', shopController.showCart);
+router.get('/cart', authController, shopController.showCart);
 
-router.post('/add-cart', shopController.postCart);
+router.post('/add-cart', authController, shopController.postCart);
 
-router.post('/cart-delete', shopController.postdeleteCart);
+router.post('/cart-delete', authController, shopController.postdeleteCart);
 
-router.get('/orders', shopController.showOrders);
+router.get('/orders', authController, shopController.showOrders);
 
-router.post('/create-order', shopController.postOrders);
+router.post('/create-order', authController, shopController.postOrders);
 
 module.exports = router;
 
