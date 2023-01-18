@@ -1,5 +1,4 @@
 const Product = require('../models/product')
-const User = require('../models/user')
 const Order = require('../models/order')
 
 /* 
@@ -11,9 +10,8 @@ exports.getAddProduct = (req, res, next) => {
         pageTitle: 'Add Product',
         path: '/addEdit-product',
         // the above is the path in the nev.ejs file
-        editing: false,
-        // this is for => const editMode = req.query.edit boolean
-        isAuth: req.session.isLoggedIn
+        editing: false
+        // this is for => const editMode = req.query.edit boole
     })
 }
 
@@ -52,8 +50,7 @@ exports.getShowProduct = (req, res, next) => {
             res.render('admin/show-product', {
                 prods: product,
                 pageTitle: 'Admin All Products',
-                path: '/show-product',
-                isAuth: req.session.isLoggedIn
+                path: '/show-product'
             })
         })
         .catch(err => {
@@ -78,8 +75,7 @@ exports.getEditProduct = (req, res, next) =>{
                 pageTitle: 'Edit Product',
                 path: '/onlyEdit-product',
                 editing: editMode,
-                prod: product,
-                isAuth: req.session.isLoggedIn
+                prod: product
             })
         })
         .catch(err => console.log(err))
@@ -101,6 +97,7 @@ exports.postEditProduct = (req, res, next) => {
             product.imageUrl = updImg
             product.price = updPrice
             product.description = updDes
+            product.userId = prodId
             return product.save()
             // note I called save on the result "product" not on model "Product"
         })
@@ -141,8 +138,7 @@ exports.showIndex = (req, res, next) => {
             res.render('shop/index', {
                 prods: product, 
                 pageTitle: 'Index Page',
-                path: '/',
-                isAuth: req.session.isLoggedIn
+                path: '/'
             })
         })
         .catch(err => {
@@ -156,8 +152,7 @@ exports.showProducts = (req, res, next) => {
         res.render('shop/product-list', {
             prods: product, 
             pageTitle: 'Shop Page',
-            path: '/user-products',
-            isAuth: req.session.isLoggedIn
+            path: '/user-products'
         })
     })
     .catch(err => {
@@ -172,9 +167,8 @@ exports.showSingleProduct = (req, res, next) => {
             res.render('shop/product-detail', {
                 prod: product,
                 pageTitle: product.title,
-                path: '/user-products' ,
+                path: '/user-products'
                 // it'll seem as if we're still on products page
-                isAuth: req.session.isLoggedIn
             })
         })
         .catch(err => {
@@ -183,6 +177,10 @@ exports.showSingleProduct = (req, res, next) => {
 }
 
 exports.showCart = (req, res, next) => {
+    if(!req.session.isLoggedIn){
+        console.log("Access denied, please login")
+        return res.redirect('/login')
+    }
     req.user
         .populate('cart.items.prodId')
         .then(user => {
@@ -191,14 +189,17 @@ exports.showCart = (req, res, next) => {
             res.render('shop/cart', {
                 pageTitle: 'Cart Page',
                 path: '/user-cart',
-                products: cartProducts,
-                isAuth: req.session.isLoggedIn
+                products: cartProducts
             })
         })
         .catch(err => console.log(err))
 }
 
 exports.postCart = (req, res, next) => {
+    if(!req.session.isLoggedIn){
+        console.log("Access denied, please login")
+        return res.redirect('/login')
+    }
     const productId = req.body.prodId;
     // this is from the hidden input in the form
 
@@ -233,8 +234,7 @@ exports.showOrders = (req, res, next) => {
             res.render('shop/orders', {
                 pageTitle: 'Your Order',
                 path: '/user-orders',
-                orders: ordersData,
-                isAuth: req.session.isLoggedIn
+                orders: ordersData
             })
         })
 }
@@ -255,7 +255,7 @@ exports.postOrders = (req, res, next) => {
                 items: products,
                 user: {
                     userId: req.user, // mongoose knows it'll get just the id
-                    name: req.user.name
+                    email: req.user.email
                 }
             })
             return order.save()

@@ -5,6 +5,7 @@ const bp = require('body-parser');
 const mongoose = require('mongoose')
 const session = require('express-session')
 const mongodbStore = require('connect-mongodb-session')(session)
+const csrf = require('csurf')
 
 
 require('dotenv').config()
@@ -25,7 +26,8 @@ const store = new mongodbStore({
     uri: database_connection_url,
     collection: 'sessions'
 })
-// the cookie here helps identify the server-side session
+const csrfProtect = csrf()
+// the cookie above helps identify the server-side session
 
 /* styles & session middlewares */
 app.use(bp.urlencoded({extended: false}));
@@ -34,18 +36,13 @@ app.use(session({
     secret: 'y789iuheghj', resave: false, 
     saveUninitialized: false, store: store
 }))
+app.use(csrfProtect)
 
 /* templating engines */
 app.set('view engine', 'ejs')
 app.set('views', 'views')
 
 app.use((req, res, next) => {
-    // User.findById("63bb1d61c09b6bd8199a3297")
-    //     .then(user => {
-    //         req.session.user = user
-    //         next()
-    //     })
-    // using this would mean I'd have to change all req.session.user to req.user
     if(!req.session.user){
         return next()
     }
@@ -57,6 +54,15 @@ app.use((req, res, next) => {
         .catch(err => {
             console.log("Error finding user")
         })
+})
+
+app.use((req, res, next) => {
+    res.locals.isAuth = req.session.isLoggedIn
+    res.locals.csrfToken = req.csrfToken() // key gotten from logout form
+    next()
+    // locals let the above to be passed into every view rendered
+    // I had to pass <input type="hidden" name="_csrf" value="<%= csrfToken %>"> 
+    // into all post views
 })
 
 /* route middlewares */
