@@ -1,19 +1,46 @@
 const bcrypt = require('bcryptjs')
+const nodemailer = require('nodemailer')
+const sendgridTransport = require('nodemailer-transport-sendgrid')
+
 const User = require("../models/user")
 
+require('dotenv').config()
+const api_key = process.env.api_key
+
+const transporter = nodemailer.createTransport(sendgridTransport({
+    auth: {
+        api_key: api_key
+    }
+}))
+
 exports.getLogin = (req, res, next) => {
+    console.log(api_key)
+    let message = req.flash('Error')
+    if(message.length > 0){
+        message = message[0]
+    } else {
+        message = null
+    }
     res.render('auth/login', {
         pageTitle: 'Login',
         path: '/main-login',
-        isAuth: false
+        isAuth: false,
+        loginError: message
     })
 }
 
 exports.getSignup = (req, res, next) => {
+    let message = req.flash('userError')
+    if(message.length > 0){
+        message = message[0]
+    } else {
+        message = null
+    }
     res.render('auth/signup', {
         pageTitle: 'Signup',
         path: '/main-signup',
-        isAuth: false
+        isAuth: false,
+        signupError: message
     })
 }
 
@@ -24,13 +51,13 @@ exports.postLogin = (req, res, next) => {
     User.findOne({email: userEmail})
         .then(user => {
             if(!user){
-                console.log("The user wasn't found in database, please sign up")
-                return res.redirect('/signup')
+                req.flash('Error', "The user was not found in database, please sign up")
+                return res.redirect('/login')
             }
             bcrypt.compare(userPassword, user.password)
                 .then(passwordMatch => {
                     if(!passwordMatch){
-                        console.log('passwords do not match')
+                        req.flash('Error', 'passwords do not match')
                         return res.redirect('/login')
                     }
                     req.session.isLoggedIn = true
@@ -59,11 +86,12 @@ exports.postSignup = (req, res, next) => {
     const userEmail = req.body.email
     const userPassword = req.body.password
     const confirmPassword = req.body.confirmPassword
+    // do a normal confrim password check
 
     User.findOne({email: userEmail})
         .then(userDoc => {
             if(userDoc){
-                console.log('user exists, hence you were redirected')
+                req.flash('userError', 'user already exists, please login')
                 return res.redirect('/signup')
             }
             return bcrypt
@@ -77,9 +105,16 @@ exports.postSignup = (req, res, next) => {
                     return user.save()
                 })
                 .then(result => {
-                    console.log("Successfully created new user, kindly log in")
+                    console.log('Successfully created account')
                     res.redirect('/login')
+                    return transporter.sendMail({
+                        to: userEmail,
+                        from: 'nodejs_shopApp',
+                        subject: 'Account creation successful',
+                        html: '<h1> Congratulations, you have successfully created an account. Please go back to the login page and login with your email</h1>'
+                    })
                 })
+                .catch(err => console.log(err))
         })
         .catch(err => console.log(err))
 }

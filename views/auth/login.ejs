@@ -8,6 +8,10 @@
     
     <main>
         <form class="login-form" action="/login" method="post">
+            <% if (loginError) { %>
+                <div class="message message--error"> <%= loginError %> </div>
+            <% } %>
+
             <div class="form__container">
                 <label for="email">Email</label>
                 <input type="email" name="email" id="email">

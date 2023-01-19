@@ -5,7 +5,8 @@ const bp = require('body-parser');
 const mongoose = require('mongoose')
 const session = require('express-session')
 const mongodbStore = require('connect-mongodb-session')(session)
-const csrf = require('csurf')
+const csrf = require('csurf') // cross site request request forgeryv
+const flash = require('connect-flash')
 
 
 require('dotenv').config()
@@ -37,6 +38,7 @@ app.use(session({
     saveUninitialized: false, store: store
 }))
 app.use(csrfProtect)
+app.use(flash())
 
 /* templating engines */
 app.set('view engine', 'ejs')

@@ -125,3 +125,17 @@ main {
     color: white;
 }
 
+.message {
+    margin: auto;
+    width: 80%;
+    border: 1px solid #7777ff;
+    padding: 1rem;
+    border-radius: 3px;
+    background: #b8b8f5;
+    /* text-align: center; */
+}
+.message--error {
+    border-color: #ff0a0a;
+    background: #f77676;
+    color: #ffff;
+}

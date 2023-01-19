@@ -177,10 +177,6 @@ exports.showSingleProduct = (req, res, next) => {
 }
 
 exports.showCart = (req, res, next) => {
-    if(!req.session.isLoggedIn){
-        console.log("Access denied, please login")
-        return res.redirect('/login')
-    }
     req.user
         .populate('cart.items.prodId')
         .then(user => {
@@ -196,10 +192,6 @@ exports.showCart = (req, res, next) => {
 }
 
 exports.postCart = (req, res, next) => {
-    if(!req.session.isLoggedIn){
-        console.log("Access denied, please login")
-        return res.redirect('/login')
-    }
     const productId = req.body.prodId;
     // this is from the hidden input in the form
 
