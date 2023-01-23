@@ -1,3 +1,4 @@
+const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer')
 const sendgridTransport = require('nodemailer-transport-sendgrid')
@@ -14,8 +15,7 @@ const transporter = nodemailer.createTransport(sendgridTransport({
 }))
 
 exports.getLogin = (req, res, next) => {
-    console.log(api_key)
-    let message = req.flash('Error')
+    let message = req.flash('lError')
     if(message.length > 0){
         message = message[0]
     } else {
@@ -30,7 +30,7 @@ exports.getLogin = (req, res, next) => {
 }
 
 exports.getSignup = (req, res, next) => {
-    let message = req.flash('userError')
+    let message = req.flash('uError')
     if(message.length > 0){
         message = message[0]
     } else {
@@ -51,13 +51,13 @@ exports.postLogin = (req, res, next) => {
     User.findOne({email: userEmail})
         .then(user => {
             if(!user){
-                req.flash('Error', "The user was not found in database, please sign up")
+                req.flash('lError', "The user was not found in database, please sign up")
                 return res.redirect('/login')
             }
             bcrypt.compare(userPassword, user.password)
                 .then(passwordMatch => {
                     if(!passwordMatch){
-                        req.flash('Error', 'passwords do not match')
+                        req.flash('lError', 'passwords do not match')
                         return res.redirect('/login')
                     }
                     req.session.isLoggedIn = true
@@ -91,7 +91,7 @@ exports.postSignup = (req, res, next) => {
     User.findOne({email: userEmail})
         .then(userDoc => {
             if(userDoc){
-                req.flash('userError', 'user already exists, please login')
+                req.flash('uError', 'user already exists, please login')
                 return res.redirect('/signup')
             }
             return bcrypt
@@ -109,7 +109,7 @@ exports.postSignup = (req, res, next) => {
                     res.redirect('/login')
                     return transporter.sendMail({
                         to: userEmail,
-                        from: 'nodejs_shopApp',
+                        from: 'nodejs_shopApp@gmail.com',
                         subject: 'Account creation successful',
                         html: '<h1> Congratulations, you have successfully created an account. Please go back to the login page and login with your email</h1>'
                     })
@@ -124,6 +124,111 @@ exports.postLogout = (req, res, next) => {
         console.log(err)
         res.redirect('/')
     })
+}
+
+exports.getReset = (req, res, next) => {
+    let message = req.flash('rError')
+    if (message.length > 0){
+        message = message[0]
+    } else {
+        message = null
+    }
+    res.render('auth/reset', {
+        path: '/login', // as if we're still on login page
+        pageTitle: 'Reset Password',
+        resetError: message
+    })
+}
+
+exports.postReset = (req, res, next) => {
+    // cryto helps generate tokens with expiry dates which I can send
+    // to the user (and I'll be sure it came only from my app)
+    // and enhances the security of my app users
+    crypto.randomBytes(32, (err, buff) => {
+        if(err){
+            req.flash('rError', 'Oops! Unable to generate token')
+            console.log(err)
+            return res.redirect('/reset')
+        }
+        const token = buff.toString('hex')
+        User.findOne({email: req.body.email})
+            .then(user => {
+                if(!user){
+                    req.flash('rError', 'Sorry, there is NO user with the email entered')
+                    return res.redirect('/reset')
+                }
+                tokenReset = token
+                tokenExpiration = Date.now() + 3600000 // expires in an hour
+                return user.save()
+            })
+            .then(result => {
+                res.redirect('/login')
+                transporter.sendMail({
+                    to: req.body.email,
+                    from: 'nodejs_shopApp@gmail.com',
+                    subject: 'Request for password reset',
+                    html: `
+                        <h1> Request for password reset of ${User.email} </h1>
+                        <p> click on this <a href="http://localhost:4000/passchange/${token}"> link </a> to reset your password </p>
+                    `
+                })
+            })
+            .catch(err => console.log(err))
+    })
+}
+
+exports.getPassChanged = (req, res, next) => {
+    const token = req.params.mytoken
+    User.findOne({tokenReset: token, tokenExpiration: {$gt: Date.now()}})
+        .then(user => {
+            message = req.flash('pError')
+            if(message.length > 0){
+                message = message[0]
+            } else {
+                message = null
+            }
+            res.reder('auth/passchanged', {
+                path: '/login',
+                pageTitle: 'Password Changed',
+                passError: message,
+                storedUser: user._id.toString(), // Now passed into the ejs form file
+                storedToken: token
+            })
+        })
+        .catch(err => console.log(err))
+}
+
+exports.postPassChanged = (req, res, next) => {
+    const userId = req.body.userID // retrieving from the ejs form file
+    const token = req.body.tokenID
+    const pass = req.body.password
+    const confirmPass = req.body.confirmPassword
+
+    if (confirmPass !== pass){
+        console.log('passwords do not match')
+        req.flash('pError', 'Passwords do not match!')
+        return res.redirect('/')
+    }
+    let newUser;
+    User.findOne({
+        tokenReset: token, 
+        tokenExpiration: {$gt: Date.now()},
+        _id: userId.toString()
+    })
+        .then(user => {
+            newUser = user
+            return bcrypt.hash(pass, 12)
+        })
+        .then(hashedPassword => {
+            newUser.tokenReset = undefined
+            newUser.tokenExpiration = undefined
+            newUser.password = hashedPassword
+            return newUser.save()
+        })
+        .then(result => {
+            res.redirect('/login')
+        })
+        .catch(err => console.log(err))
 }
 
 // we typically use a session when we have sensitive data belonging to a 

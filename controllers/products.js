@@ -40,7 +40,8 @@ exports.postAddProduct = (req, res, next) => {
 }
 
 exports.getShowProduct = (req, res, next) => {
-    Product.find()
+    Product.find({userId: req.user._id}) // confirming if it's logged in user
+    // check app.js file for user initialization (req.user = user)
         // .select('title price -_id')
         // now I'm fetching just title and price, _id is automatically fetched
         // so I had to exclude it if I didn't want to retrieve it 4rm database
@@ -93,17 +94,23 @@ exports.postEditProduct = (req, res, next) => {
     
     Product.findById(prodId)
         .then(product => {
+            // adding additional route protection peradventure a user
+            // finds a way to get to the edit page of products not created
+            // by him/her
+            if(product.userId.toString() !== req.user._id.toString()){
+                console.log('Unauthorized error, not permitted to edit product')
+                return res.redirect('/')
+            }
             product.title = updTitle 
             product.imageUrl = updImg
             product.price = updPrice
             product.description = updDes
-            product.userId = prodId
             return product.save()
             // note I called save on the result "product" not on model "Product"
-        })
-        .then(result => {
-            console.log('Successfully updated product')
-            res.redirect('/admin/show-product')
+            .then(result => {
+                console.log('Successfully updated product')
+                res.redirect('/admin/show-product')
+            })
         })
         .catch(err => console.log(err))
         // mongoose does a bts update when're we call save on an existing obj
@@ -116,10 +123,10 @@ exports.postDeleteProduct = (req, res, next) => {
     const productId = req.body.prodId
     // fetching prodId from the name field of the hidden input
 
-    Product.findByIdAndDelete(productId)
+    Product.deleteOne({_id: productId, userId: req.user._id})
         .then(prod => {
-        console.log('product successfully deleted')
-        res.redirect('admin/show-product')
+            console.log('product successfully deleted')
+            res.redirect('admin/show-product')
         })
         .catch(err => {
             console.log(err)

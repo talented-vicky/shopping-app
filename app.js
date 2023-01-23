@@ -84,3 +84,27 @@ mongoose.connect(database_connection_url)
         console.log(err)
     })
 
+
+/*
+n is the total number of players (n is always even)
+m is the number of round of games to be played    
+
+steps:
+split total players into n/2 in each game round
+two players are said to have played against each other if they're on 
+different teams
+ 
+ */
+// const check = (n, m, games) => {
+//     const teams = n/2   
+//     for(let i = 1; i <= m; i++){
+//         // this is for each game round
+//         let team1 = []
+//         let team2 = []
+//         team1//
+//         console.log('stuff')
+//     }    
+// }
+
+// // check(2, 1, [[1, 2]])
+// check(4, 2, [[1, 2, 3, 4], [4, 3, 1, 2]])

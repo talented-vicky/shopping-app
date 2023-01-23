@@ -7,27 +7,18 @@
     <%- include('../includes/nav.ejs')%>
     
     <main>
-        <form class="login-form" action="/login" method="post">
-            <% if (loginError) { %>
-                <div class="message message--error"> <%= loginError %> </div>
+        <form class="login-form" action="/reset" method="post">
+            <% if (resetError) { %>
+                <div class="message message--error"> <%= resetError %> </div>
             <% } %>
 
             <div class="form__container">
                 <label for="email">Email</label>
                 <input type="email" name="email" id="email">
             </div>
-
-            <div class="form__container">
-                <label for="pass">Password</label>
-                <input type="password" name="password" id="pass">
-            </div>
             
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button class="btn" type="submit"> Login </button>
-
-            <div class="centered">
-                <a href="/reset"> Reset Password </a>
-            </div>
+            <button class="btn" type="submit"> Reset Password </button>
         </form>
     </main>
 
