@@ -23,5 +23,8 @@
     outline-color: #2c2ccc;
 }
 
+.form__container input.invalid {
+    border-color: rgb(255, 28, 28)
+}
 
 /* remember functionality first, styles later */

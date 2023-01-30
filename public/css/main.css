@@ -139,3 +139,9 @@ main {
     background: #f77676;
     color: #ffff;
 }
+
+.message--success {
+    border-color: #09ff09;
+    background: #64f064;
+    color: #ffff;
+}

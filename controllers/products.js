@@ -1,6 +1,8 @@
 const Product = require('../models/product')
 const Order = require('../models/order')
 
+const { validationResult } = require('express-validator')
+
 /* 
 ADMIN CONTROLLERS
 */
@@ -10,8 +12,11 @@ exports.getAddProduct = (req, res, next) => {
         pageTitle: 'Add Product',
         path: '/addEdit-product',
         // the above is the path in the nev.ejs file
-        editing: false
+        editing: false,
         // this is for => const editMode = req.query.edit boole
+        addprodError: null,
+        inputValue: { tit: '', image: '', price: '', desc: '' },
+        errorArray: []
     })
 }
 
@@ -20,6 +25,8 @@ exports.postAddProduct = (req, res, next) => {
     const img = req.body.imageUrl
     const price = req.body.price
     const des = req.body.description
+
+    const errors = validationResult(req)
 
     const product = new Product({ 
         title: title, imageUrl: img, price: price, 
@@ -30,7 +37,16 @@ exports.postAddProduct = (req, res, next) => {
         // the user._id and not all values
     })
     // keys point at prod schema while values point at const variable defined
-    
+    if(!errors.isEmpty()){
+        return res.status(422).render('admin/edit-product', {
+            pageTitle: 'Add Product',
+            path: '/addEdit-product',
+            editing: false,
+            addprodError: errors.array()[0].msg,
+            inputValue: { tit: title, image: img, price: price, desc: des },
+            errorArray: errors.array()
+        })
+    }
     product.save()
         .then(result => {
             console.log('Successfully created product')
@@ -76,7 +92,10 @@ exports.getEditProduct = (req, res, next) =>{
                 pageTitle: 'Edit Product',
                 path: '/onlyEdit-product',
                 editing: editMode,
-                prod: product
+                prod: product,
+                addprodError: null,
+                inputValue: { tit: '', image: '', price: '', desc: '' },
+                errorArray: []
             })
         })
         .catch(err => console.log(err))
@@ -87,11 +106,26 @@ exports.postEditProduct = (req, res, next) => {
     const prodId = req.body.productId
     // I just fetched the id (when on edit mode) from the hidden 
     // input in edit-product.ejs
+    const editMode = req.query.edit
+    if(!editMode){
+        return res.redirect('/')
+    }
     const updTitle = req.body.title
     const updImg = req.body.imageUrl
     const updPrice = req.body.price
     const updDes = req.body.description
-    
+    const errors = validationResult(req)
+
+    if(!errors.isEmpty()){
+        return res.status(422).render('admin/edit-product', {
+            pageTitle: 'Edit Product',
+            path: '/onlyEdit-product',
+            editing: editMode,
+            addprodError: errors.array()[0].msg,
+            inputValue: { tit: updTitle, image: updImg, price: updPrice, desc: updDes },
+            errorArray: errors.array()
+        })
+    }    
     Product.findById(prodId)
         .then(product => {
             // adding additional route protection peradventure a user

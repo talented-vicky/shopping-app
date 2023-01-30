@@ -5,7 +5,7 @@ const bp = require('body-parser');
 const mongoose = require('mongoose')
 const session = require('express-session')
 const mongodbStore = require('connect-mongodb-session')(session)
-const csrf = require('csurf') // cross site request request forgeryv
+const csrf = require('csurf') // cross site request forgeryv
 const flash = require('connect-flash')
 
 
@@ -85,26 +85,23 @@ mongoose.connect(database_connection_url)
     })
 
 
-/*
-n is the total number of players (n is always even)
-m is the number of round of games to be played    
-
-steps:
-split total players into n/2 in each game round
-two players are said to have played against each other if they're on 
-different teams
- 
- */
-// const check = (n, m, games) => {
-//     const teams = n/2   
-//     for(let i = 1; i <= m; i++){
-//         // this is for each game round
-//         let team1 = []
-//         let team2 = []
-//         team1//
-//         console.log('stuff')
-//     }    
-// }
-
-// // check(2, 1, [[1, 2]])
-// check(4, 2, [[1, 2, 3, 4], [4, 3, 1, 2]])
+// // looping throug an array to find the count of a specific element
+// // and then remove it from the array as many times as it appears, ensuring
+// // to replace with any special character, but allowing existing elements
+// // come first in the modified array
+// var removeElement = function(nums, val) {
+//     let valCount = 0;
+//     for(let i = 0; i < nums.length; i++){
+//         console.log(nums[i])
+//         if(nums[i] == val){
+//             nums.splice(val, 1)
+//         } else {
+//             valCount += 1
+//         }
+//     }
+//     // return nums
+//     console.log(`${valCount}, nums = [${nums}]`)  
+// };
+// // removeElement([2, 6, 5, 7, 6, 8, 6, 2, 1, 6, 14, 6, 11], 6)
+// removeElement([0,1,2,5,2,3,0,4,2], 2)
+// // console.log(result)

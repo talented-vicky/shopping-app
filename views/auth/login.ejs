@@ -14,12 +14,18 @@
 
             <div class="form__container">
                 <label for="email">Email</label>
-                <input type="email" name="email" id="email">
+                <input 
+                    class="<%= errorsArray.find(val => val.param === 'email') ? 'invalid' : '' %>"
+                    type="email" name="email" id="email" value="<%= inputValue.email %>"
+                >
             </div>
 
             <div class="form__container">
                 <label for="pass">Password</label>
-                <input type="password" name="password" id="pass">
+                <input 
+                    class="<%= errorsArray.find(val => val.param === 'password') ? 'invalid' : '' %>"
+                    type="password" name="password" id="pass" value="<%= inputValue.password %>"
+                >
             </div>
             
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">

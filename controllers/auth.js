@@ -1,18 +1,21 @@
 const crypto = require('crypto')
 const bcrypt = require('bcryptjs')
 const nodemailer = require('nodemailer')
-const sendgridTransport = require('nodemailer-transport-sendgrid')
+const nodemailerSendgrid = require('nodemailer-sendgrid')
+const { validationResult } = require('express-validator')
 
 const User = require("../models/user")
 
 require('dotenv').config()
 const api_key = process.env.api_key
 
-const transporter = nodemailer.createTransport(sendgridTransport({
-    auth: {
-        api_key: api_key
-    }
-}))
+const transporter = nodemailer.createTransport(
+    nodemailerSendgrid({
+        auth: {
+            api_key: api_key
+        }
+    })
+)
 
 exports.getLogin = (req, res, next) => {
     let message = req.flash('lError')
@@ -25,7 +28,12 @@ exports.getLogin = (req, res, next) => {
         pageTitle: 'Login',
         path: '/main-login',
         isAuth: false,
-        loginError: message
+        loginError: message,
+        inputValue: {
+            email: "",
+            password: ""
+        },
+        errorsArray: []
     })
 }
 
@@ -40,25 +48,49 @@ exports.getSignup = (req, res, next) => {
         pageTitle: 'Signup',
         path: '/main-signup',
         isAuth: false,
-        signupError: message
+        signupError: message,
+        inputValue: {
+            email: "",
+            password: ""
+        },
+        errorsArray: []
     })
 }
 
 exports.postLogin = (req, res, next) => {
     const userEmail = req.body.email
     const userPassword = req.body.password
+    const errors = validationResult(req)
+
+    // work on dynamic styling error on login form
 
     User.findOne({email: userEmail})
         .then(user => {
             if(!user){
-                req.flash('lError', "The user was not found in database, please sign up")
-                return res.redirect('/login')
+                return res.status(422).render('auth/login', {
+                    pageTitle: 'Login',
+                    path: '/main-login',
+                    loginError: "The user was not found in database, please sign up",
+                    inputValue: {
+                        email: userEmail,
+                        password: userPassword
+                    },
+                    errorsArray: errors.array()
+                })
             }
             bcrypt.compare(userPassword, user.password)
                 .then(passwordMatch => {
                     if(!passwordMatch){
-                        req.flash('lError', 'passwords do not match')
-                        return res.redirect('/login')
+                        return res.status(422).render('auth/login', {
+                            pageTitle: 'Login',
+                            path: '/main-login',
+                            loginError: 'password entered is incorrect',
+                            inputValue: {
+                                email: userEmail,
+                                password: userPassword
+                            },
+                            errorsArray: errors.array()
+                        })
                     }
                     req.session.isLoggedIn = true
                     req.session.user = user
@@ -85,36 +117,42 @@ exports.postLogin = (req, res, next) => {
 exports.postSignup = (req, res, next) => {
     const userEmail = req.body.email
     const userPassword = req.body.password
-    const confirmPassword = req.body.confirmPassword
-    // do a normal confrim password check
+    const errors = validationResult(req)
 
-    User.findOne({email: userEmail})
-        .then(userDoc => {
-            if(userDoc){
-                req.flash('uError', 'user already exists, please login')
-                return res.redirect('/signup')
-            }
-            return bcrypt
-                .hash(userPassword, 12)
-                .then(hashedPassword => {
-                    const user = new User({
-                        email: userEmail,
-                        password: hashedPassword,
-                        cart: {items: []}
-                    })
-                    return user.save()
-                })
-                .then(result => {
-                    console.log('Successfully created account')
-                    res.redirect('/login')
-                    return transporter.sendMail({
-                        to: userEmail,
-                        from: 'nodejs_shopApp@gmail.com',
-                        subject: 'Account creation successful',
-                        html: '<h1> Congratulations, you have successfully created an account. Please go back to the login page and login with your email</h1>'
-                    })
-                })
-                .catch(err => console.log(err))
+    if(!errors.isEmpty()){ // false means there are errors
+        console.log(errors.array()) // check this to better understand code
+        
+        return res.status(422).render('auth/signup', {
+            pageTitle: 'Signup',
+            path: '/main-signup',
+            isAuth: false,
+            signupError: errors.array()[0].msg,
+            inputValue: {
+                email: userEmail,
+                password: userPassword
+            },
+            errorsArray: errors.array()
+        })
+    }
+    bcrypt
+        .hash(userPassword, 12)
+        .then(hashedPassword => {
+            const user = new User({
+                email: userEmail,
+                password: hashedPassword,
+                cart: {items: []}
+            })
+            return user.save()
+        })
+        .then(result => {
+            console.log('Successfully created account')
+            res.redirect('/login')
+            return transporter.sendMail({
+                to: userEmail,
+                from: 'victorotubure7@gmail.com',
+                subject: 'Account creation successful',
+                html: '<h1> Congratulations, you have successfully created an account. Please go back to the login page and login with your email</h1>'
+            })
         })
         .catch(err => console.log(err))
 }
@@ -168,8 +206,9 @@ exports.postReset = (req, res, next) => {
                     from: 'nodejs_shopApp@gmail.com',
                     subject: 'Request for password reset',
                     html: `
-                        <h1> Request for password reset of ${User.email} </h1>
-                        <p> click on this <a href="http://localhost:4000/passchange/${token}"> link </a> to reset your password </p>
+                        <h1> Hellow ${User.email} </h1>
+                        <h2> A request has been received to change your password </h2>
+                        <p> click on this <a href="http://localhost:4000/passchange/${token}"> link </a> to continue reset </p>
                     `
                 })
             })
