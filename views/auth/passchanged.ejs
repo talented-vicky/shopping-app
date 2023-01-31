@@ -7,11 +7,10 @@
     <%- include('../includes/nav.ejs')%>
     
     <main>
+        <% if (passError) { %>
+            <div class="message message--success"> <%= passError %> </div>
+        <% } %>
         <form class="login-form" action="/passchange" method="post">
-            <% if (passError) { %>
-                <div class="message message--error"> <%= passError %> </div>
-            <% } %>
-
             <div class="form__container">
                 <label for="pass">New Password</label>
                 <input type="password" name="password" id="pass">

@@ -7,11 +7,10 @@
     <%- include('../includes/nav.ejs')%>
     
     <main>
+        <% if (resetError) { %>
+            <div class="message message--error"> <%= resetError %> </div>
+        <% } %>
         <form class="login-form" action="/reset" method="post">
-            <% if (resetError) { %>
-                <div class="message message--error"> <%= resetError %> </div>
-            <% } %>
-
             <div class="form__container">
                 <label for="email">Email</label>
                 <input type="email" name="email" id="email">

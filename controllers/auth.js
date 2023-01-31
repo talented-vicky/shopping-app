@@ -18,37 +18,25 @@ const transporter = nodemailer.createTransport(
 )
 
 exports.getLogin = (req, res, next) => {
-    let message = req.flash('lError')
-    if(message.length > 0){
-        message = message[0]
-    } else {
-        message = null
-    }
     res.render('auth/login', {
         pageTitle: 'Login',
         path: '/main-login',
         isAuth: false,
-        loginError: message,
+        loginError: null,
         inputValue: {
             email: "",
             password: ""
         },
-        errorsArray: []
+        errorsArray: [] // for css dynamic style
     })
 }
 
 exports.getSignup = (req, res, next) => {
-    let message = req.flash('uError')
-    if(message.length > 0){
-        message = message[0]
-    } else {
-        message = null
-    }
     res.render('auth/signup', {
         pageTitle: 'Signup',
         path: '/main-signup',
         isAuth: false,
-        signupError: message,
+        signupError: null,
         inputValue: {
             email: "",
             password: ""
@@ -75,7 +63,7 @@ exports.postLogin = (req, res, next) => {
                         email: userEmail,
                         password: userPassword
                     },
-                    errorsArray: errors.array()
+                    errorsArray: errors.array() // for css dynamic style
                 })
             }
             bcrypt.compare(userPassword, user.password)

@@ -7,10 +7,10 @@
     <%- include('../includes/nav.ejs')%>
     
     <main>
+        <% if(signupError) { %>
+            <div class="message message--error"> <%= signupError %></div>
+        <% } %>
         <form class="login-form" action="/signup" method="post">
-            <% if(signupError) { %>
-                <div class="message message--error"> <%= signupError %></div>
-            <% } %>
             <div class="form__container">
                 <label for="email">Email</label>
                 <input 

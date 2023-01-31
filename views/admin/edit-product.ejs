@@ -7,21 +7,25 @@
     <%- include('../includes/nav.ejs')%>
     
     <main>
+        <% if (addprodError) { %>
+            <div class="message message--error"> <%= addprodError %></div>
+        <% } %>
         <form class="form" action="/admin/<% if(editing) { %>edit-product<% } else { %>product<% } %>" method="post">
-            <% if (addprodError) { %>
-                <div class="message message--error"> <%= addprodError %></div>
-            <% } %>
             <div class="form__container">
                 <label for="tit">Title</label>
-                <input type="text" name="title" id="tit" 
-                    value="<% if(editing) { %><%=prod.title%><% } else { %><%=inputValue.tit%><% } %>"
+                <input 
+                    class="<%= errorArray.find(arr => arr.param === 'title') ? 'invalid' : '' %>"
+                    type="text" name="title" id="tit" 
+                    value="<% if(editing || errorPresent) { %><%=prod.title%><% } %>"
                 >
             </div>
 
             <div class="form__container">
                 <label for="img">Image Url</label>
-                <input type="text" name="imageUrl" id="img"
-                    value="<% if(editing) { %><%=prod.imageUrl%><% } else { %><%=inputValue.image%><% } %>"
+                <input 
+                    class="<%= errorArray.find(arr => arr.param === 'imageUrl') ? 'invalid' : '' %>"
+                    type="text" name="imageUrl" id="img"
+                    value="<% if(editing || errorPresent) { %><%=prod.imageUrl%><% } %>"
                 >
             </div>
 
@@ -30,13 +34,13 @@
                 <input 
                     class="<%= errorArray.find(arr => arr.param === 'price') ? 'invalid' : '' %>"
                     type="number" name="price" id="price" step=".01" 
-                    value="<% if(editing) { %><%=prod.price%><% } else { %><%=inputValue.price%><% } %>"
+                    value="<% if(editing || errorPresent) { %><%=prod.price%><% } %>"
                 >
             </div>
             
             <div class="form__container">
                 <label for="des">Description</label>
-                <textarea name="description" id="des" cols="30" rows="10"><% if(editing) { %><%=prod.description%><% } else { %><%=inputValue.desc%><% } %></textarea>
+                <textarea class="<%= errorArray.find(arr => arr.param === 'description') ? 'invalid' : '' %>" name="description" id="des" cols="30" rows="10"><% if(editing || errorPresent) { %><%=prod.description%><% } %></textarea>
             </div>
 
             <% if(editing) { %>

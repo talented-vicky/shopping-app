@@ -14,8 +14,8 @@ exports.getAddProduct = (req, res, next) => {
         // the above is the path in the nev.ejs file
         editing: false,
         // this is for => const editMode = req.query.edit boole
+        errorPresent: false,
         addprodError: null,
-        inputValue: { tit: '', image: '', price: '', desc: '' },
         errorArray: []
     })
 }
@@ -25,28 +25,26 @@ exports.postAddProduct = (req, res, next) => {
     const img = req.body.imageUrl
     const price = req.body.price
     const des = req.body.description
-
     const errors = validationResult(req)
 
-    const product = new Product({ 
-        title: title, imageUrl: img, price: price, 
-        description: des, userId: req.user 
-        // userId: req.user._id => would not be useful if I need more 
-        // data than just the id of the user
-        // userId: req.user => mongoose understands to store just 
-        // the user._id and not all values
-    })
-    // keys point at prod schema while values point at const variable defined
     if(!errors.isEmpty()){
         return res.status(422).render('admin/edit-product', {
             pageTitle: 'Add Product',
             path: '/addEdit-product',
             editing: false,
+            errorPresent: true,
             addprodError: errors.array()[0].msg,
-            inputValue: { tit: title, image: img, price: price, desc: des },
+            prod: { title: title, imageUrl: img, price: price, description: des },
             errorArray: errors.array()
         })
     }
+    const product = new Product({ 
+        title: title, imageUrl: img, price: price, 
+        description: des, userId: req.user 
+        // userId: req.user => mongoose understands to store just 
+        // the user._id and not all values
+    })
+    // keys point at prod schema while values point at const variable defined
     product.save()
         .then(result => {
             console.log('Successfully created product')
@@ -55,7 +53,7 @@ exports.postAddProduct = (req, res, next) => {
         .catch(err => console.log(err))
 }
 
-exports.getShowProduct = (req, res, next) => {
+exports.getMyProduct = (req, res, next) => {
     Product.find({userId: req.user._id}) // confirming if it's logged in user
     // check app.js file for user initialization (req.user = user)
         // .select('title price -_id')
@@ -70,9 +68,7 @@ exports.getShowProduct = (req, res, next) => {
                 path: '/show-product'
             })
         })
-        .catch(err => {
-            console.log(err)
-        })
+        .catch(err => console.log(err))
 }
 
 exports.getEditProduct = (req, res, next) =>{
@@ -92,9 +88,9 @@ exports.getEditProduct = (req, res, next) =>{
                 pageTitle: 'Edit Product',
                 path: '/onlyEdit-product',
                 editing: editMode,
+                errorPresent: false,
                 prod: product,
                 addprodError: null,
-                inputValue: { tit: '', image: '', price: '', desc: '' },
                 errorArray: []
             })
         })
@@ -104,12 +100,8 @@ exports.getEditProduct = (req, res, next) =>{
 
 exports.postEditProduct = (req, res, next) => {
     const prodId = req.body.productId
-    // I just fetched the id (when on edit mode) from the hidden 
-    // input in edit-product.ejs
-    const editMode = req.query.edit
-    if(!editMode){
-        return res.redirect('/')
-    }
+    // I just fetched the id {name: productId, value: prod._id} 
+    // (when on edit mode) from the hidden input in edit-product.ejs
     const updTitle = req.body.title
     const updImg = req.body.imageUrl
     const updPrice = req.body.price
@@ -120,10 +112,15 @@ exports.postEditProduct = (req, res, next) => {
         return res.status(422).render('admin/edit-product', {
             pageTitle: 'Edit Product',
             path: '/onlyEdit-product',
-            editing: editMode,
-            addprodError: errors.array()[0].msg,
-            inputValue: { tit: updTitle, image: updImg, price: updPrice, desc: updDes },
-            errorArray: errors.array()
+            editing: true,
+            errorPresent: true,
+            addprodError: errors.array()[0].msg, // displaying error
+            errorArray: errors.array(), // searching through errors
+            prod: { 
+                title: updTitle, imageUrl: updImg, 
+                price: updPrice, description: updDes, 
+                _id: prodId //which will now be re-available in form
+            }, // keeping original user input
         })
     }    
     Product.findById(prodId)
@@ -139,6 +136,7 @@ exports.postEditProduct = (req, res, next) => {
             product.imageUrl = updImg
             product.price = updPrice
             product.description = updDes
+            product.userId = req.user
             return product.save()
             // note I called save on the result "product" not on model "Product"
             .then(result => {
@@ -162,9 +160,7 @@ exports.postDeleteProduct = (req, res, next) => {
             console.log('product successfully deleted')
             res.redirect('admin/show-product')
         })
-        .catch(err => {
-            console.log(err)
-        })
+        .catch(err => console.log(err))
 }
 
 

@@ -29,7 +29,7 @@ router.post('/product',
 );
 
 // this one is /admin/show-product
-router.get('/show-product', authController, prodController.getShowProduct);
+router.get('/show-product', authController, prodController.getMyProduct);
 
 // this one is /admin/edit-product/:prodId
 router.get('/edit-product/:prodId', authController, prodController.getEditProduct)
@@ -37,7 +37,7 @@ router.get('/edit-product/:prodId', authController, prodController.getEditProduc
 router.post('/edit-product', 
     [
     body('title', 'title length should be at least 5 characters')
-        .isAlphanumeric()
+        .isString()
         .isLength({min: 5})
         .trim(),
     body('imageUrl', 'You should enter a valid url')
