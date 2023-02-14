@@ -1,8 +1,17 @@
 const Product = require('../models/product')
 const Order = require('../models/order')
+const fs = require('fs')
+const path = require('path')
+const pdfDoc = require('pdfkit')
+const urlPathDelete = require('../helper/url')
 
 const { validationResult } = require('express-validator')
 
+const technicalErrorCtr = (nexxx, err) => {
+    const error = new Error(err)
+    error.httpStatusCode = 500
+    return nexxx(error) 
+}
 /* 
 ADMIN CONTROLLERS
 */
@@ -22,10 +31,22 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
     const title = req.body.title
-    const img = req.body.imageUrl
+    const image = req.file
     const price = req.body.price
     const des = req.body.description
     const errors = validationResult(req)
+
+    if(!image){
+        return res.status(422).render('admin/edit-product', {
+            pageTitle: 'Add Product',
+            path: '/addEdit-product',
+            editing: false,
+            errorPresent: true,
+            addprodError: 'Attached file is not an image',
+            prod: { title: title, price: price, description: des },
+            errorArray: []
+        }) 
+    }
 
     if(!errors.isEmpty()){
         return res.status(422).render('admin/edit-product', {
@@ -34,12 +55,13 @@ exports.postAddProduct = (req, res, next) => {
             editing: false,
             errorPresent: true,
             addprodError: errors.array()[0].msg,
-            prod: { title: title, imageUrl: img, price: price, description: des },
+            prod: { title: title, price: price, description: des },
             errorArray: errors.array()
         })
     }
+
     const product = new Product({ 
-        title: title, imageUrl: img, price: price, 
+        title: title, imageUrl: image.path, price: price, 
         description: des, userId: req.user 
         // userId: req.user => mongoose understands to store just 
         // the user._id and not all values
@@ -50,7 +72,7 @@ exports.postAddProduct = (req, res, next) => {
             console.log('Successfully created product')
             res.redirect('/')
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.getMyProduct = (req, res, next) => {
@@ -68,7 +90,7 @@ exports.getMyProduct = (req, res, next) => {
                 path: '/show-product'
             })
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.getEditProduct = (req, res, next) =>{
@@ -94,7 +116,7 @@ exports.getEditProduct = (req, res, next) =>{
                 errorArray: []
             })
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
     // remember we have access to all the key values in the ejs files
 }
 
@@ -103,11 +125,11 @@ exports.postEditProduct = (req, res, next) => {
     // I just fetched the id {name: productId, value: prod._id} 
     // (when on edit mode) from the hidden input in edit-product.ejs
     const updTitle = req.body.title
-    const updImg = req.body.imageUrl
+    const image = req.file
     const updPrice = req.body.price
     const updDes = req.body.description
     const errors = validationResult(req)
-
+    
     if(!errors.isEmpty()){
         return res.status(422).render('admin/edit-product', {
             pageTitle: 'Edit Product',
@@ -117,12 +139,13 @@ exports.postEditProduct = (req, res, next) => {
             addprodError: errors.array()[0].msg, // displaying error
             errorArray: errors.array(), // searching through errors
             prod: { 
-                title: updTitle, imageUrl: updImg, 
-                price: updPrice, description: updDes, 
+                title: updTitle, price: updPrice, description: updDes, 
                 _id: prodId //which will now be re-available in form
             }, // keeping original user input
         })
     }    
+
+    // getting to this stage means we made it past the validation
     Product.findById(prodId)
         .then(product => {
             // adding additional route protection peradventure a user
@@ -133,7 +156,10 @@ exports.postEditProduct = (req, res, next) => {
                 return res.redirect('/')
             }
             product.title = updTitle 
-            product.imageUrl = updImg
+            if(image){
+                urlPathDelete.deteleFile(product.imageUrl)
+                product.imageUrl = image.path
+            } // if the user doesn't pick an image, url will be the old one
             product.price = updPrice
             product.description = updDes
             product.userId = req.user
@@ -144,8 +170,8 @@ exports.postEditProduct = (req, res, next) => {
                 res.redirect('/admin/show-product')
             })
         })
-        .catch(err => console.log(err))
-        // mongoose does a bts update when're we call save on an existing obj
+        .catch(err => technicalErrorCtr(next, err))
+        // mongoose does a bts update anytime we call save on an existing obj
 }
 
 exports.postDeleteProduct = (req, res, next) => {
@@ -154,13 +180,19 @@ exports.postDeleteProduct = (req, res, next) => {
 
     const productId = req.body.prodId
     // fetching prodId from the name field of the hidden input
-
-    Product.deleteOne({_id: productId, userId: req.user._id})
+    Product.findById(productId)
+        .then(prod => {
+            if(!prod){
+                return next(new Error('Product not found, sorry!'))
+            }
+            urlPathDelete.deteleFile(prod.imageUrl)
+            return Product.deleteOne({_id: productId, userId: req.user._id})
+        })
         .then(prod => {
             console.log('product successfully deleted')
             res.redirect('admin/show-product')
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 
@@ -178,9 +210,7 @@ exports.showIndex = (req, res, next) => {
                 path: '/'
             })
         })
-        .catch(err => {
-            console.log(err)
-        })
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.showProducts = (req, res, next) => {
@@ -192,9 +222,7 @@ exports.showProducts = (req, res, next) => {
             path: '/user-products'
         })
     })
-    .catch(err => {
-        console.log(err)
-    });
+    .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.showSingleProduct = (req, res, next) => {
@@ -208,9 +236,7 @@ exports.showSingleProduct = (req, res, next) => {
                 // it'll seem as if we're still on products page
             })
         })
-        .catch(err => {
-            console.log(err)
-        })
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.showCart = (req, res, next) => {
@@ -225,7 +251,7 @@ exports.showCart = (req, res, next) => {
                 products: cartProducts
             })
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.postCart = (req, res, next) => {
@@ -239,9 +265,7 @@ exports.postCart = (req, res, next) => {
             res.redirect('/')
         })
         .then()
-        .catch(err => {
-            console.log(err)
-        })
+        .catch(err => technicalErrorCtr(next, err))
 }
 // /* IMPORTANT */
 // // add functionality to increase or reduce the cart on cart page
@@ -254,7 +278,7 @@ exports.postdeleteCart = (req, res, next) => {
         .then(result => {
             res.redirect('/cart')
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.showOrders = (req, res, next) => {
@@ -266,6 +290,7 @@ exports.showOrders = (req, res, next) => {
                 orders: ordersData
             })
         })
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.postOrders = (req, res, next) => {
@@ -296,5 +321,74 @@ exports.postOrders = (req, res, next) => {
                     res.redirect('/cart')
                 })
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
+}
+
+exports.getInvoice = (req, res, next) => {
+    const invoiceID = req.params.invoiceId
+    Order.findById(invoiceID)
+        .then(order => {
+            if(!order){
+                return next(new Error('No order found'))
+            }
+            if(order.user.userId.toString() !== req.user._id.toString()){
+                // left = user Id attached to current invoice // right = Id of current logged in user
+                return next(new Error('Not authorized to view/download invoice'))
+            }
+            const invoiceName = 'invoice-' + invoiceID + '.pdf'
+            const invoicePath = path.join('data', 'invoices', invoiceName)
+            const doc = new pdfDoc()
+
+            res.setHeader('Content-type', 'application/pdf') // helps open files in browser as inline (by default)
+            res.setHeader('Content-Disposition', 'inline: filename="' + invoiceName + '"') // provides save as option
+            
+            doc.pipe(fs.createWriteStream(invoicePath))
+            doc.pipe(res)
+
+            doc.font('Times-Roman').fontSize(40).text('Invoice')
+
+            doc.fontSize(14).text('talented_vicky')
+            doc.fontSize(14).text('14, George Wells Street, NY')
+            doc.fontSize(14).text('+234 708 878 0964')
+            doc.fontSize(14).text('victorotubure7@gmail.com')
+            doc.moveDown()
+
+            const currentDate = new Date()
+            const day = currentDate.getDay()
+            const month = currentDate.getMonth()
+            const year = currentDate.getFullYear()
+            doc.fontSize(14).text('Issued Date: ' + day + '/' + month + '/' + year, {align: 'right'})
+            doc.fontSize(14).text('Due Data: ' + (day + 7) + '/' + month + '/' + year, {align: 'right'})
+            doc.moveDown()
+
+            doc.lineCap('square').moveTo(250, 20).circle(275, 30, 15).stroke();
+            doc.fontSize(18).text('ITEMS DESCRIPTION  QTY  UNIT_PRICE  TOTAL')
+            
+            let total = 0
+            order.items.forEach(prod => {
+                doc.fontSize(15).text(prod.product.title + ' ' + prod.qty + ' ' + prod.product.price + ' ' +(prod.qty * prod.product.price), {align: 'justify'})
+                total = total + (prod.qty * prod.product.price)
+            })
+            doc.moveDown()
+            
+            const vat = 0.05 * total
+            const dis = 0.02 * total
+            doc.text('Subtotal == ' + '$' + total, {align: 'right'})
+            doc.text('VAT (5%) == ' + '$' + vat.toFixed(3), {align: 'right'})
+            doc.text('Discount (2% off) == ' + '$' + dis.toFixed(3), {align: 'right'}).moveDown()
+            doc.text('Total == ' + '$' + (total + vat - dis), {align: 'right'}).moveDown()
+
+            doc.font('Times-Roman').fontSize(16).text('Thank you for shopping with us')
+            doc.end()
+
+            // const fileStream = fs.createReadStream(invoicePath)
+            // res.setHeader('Content-type', 'application/pdf') // helps open files in browser as inline (by default)
+            // res.setHeader('Content-Disposition', 'attachement: filename="' + invoiceName + '"') // provides save as option
+            // fileStream.pipe(res) // remember the pipe is a writable stream
+            // piping the file stream into the response which is in turn streamed to 
+            // the browser which contains the data (but in bits or chunks)
+            // this saves chunks of the files into the res object (which is writeable)
+        })
+        .catch(err => next(err))
+
 }

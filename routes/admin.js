@@ -16,8 +16,6 @@ router.post('/product',
         .isAlphanumeric()
         .isLength({min: 5})
         .trim(),
-    body('imageUrl', 'You should enter a valid url')
-        .isURL(),
     body('price', 'price should contain decimal places')
         .isFloat(),
     body('description', 'Enter between 10 and 300 characters')
@@ -40,8 +38,6 @@ router.post('/edit-product',
         .isString()
         .isLength({min: 5})
         .trim(),
-    body('imageUrl', 'You should enter a valid url')
-        .isURL(),
     body('price', 'price should be in decimal format')
         .isFloat(),
     body('description', 'Enter between 10 and 300 characters')

@@ -4,6 +4,12 @@ const nodemailer = require('nodemailer')
 const nodemailerSendgrid = require('nodemailer-sendgrid')
 const { validationResult } = require('express-validator')
 
+const technicalErrorCtr = (nexxx, err) => {
+    const error = new Error(err)
+    error.httpStatusCode = 500
+    return nexxx(error)
+}
+
 const User = require("../models/user")
 
 require('dotenv').config()
@@ -96,10 +102,7 @@ exports.postLogin = (req, res, next) => {
                 })
                 .catch(compareErr => console.log(compareErr))
         })
-        .catch(err => {
-            console.log("Error finding user")
-            console.log(err)
-        })
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.postSignup = (req, res, next) => {
@@ -108,7 +111,7 @@ exports.postSignup = (req, res, next) => {
     const errors = validationResult(req)
 
     if(!errors.isEmpty()){ // false means there are errors
-        console.log(errors.array()) // check this to better understand code
+        console.log(errors.array()) // check this to understand code in the future
         
         return res.status(422).render('auth/signup', {
             pageTitle: 'Signup',
@@ -222,7 +225,7 @@ exports.getPassChanged = (req, res, next) => {
                 storedToken: token
             })
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.postPassChanged = (req, res, next) => {
@@ -255,7 +258,7 @@ exports.postPassChanged = (req, res, next) => {
         .then(result => {
             res.redirect('/login')
         })
-        .catch(err => console.log(err))
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 // we typically use a session when we have sensitive data belonging to a 
