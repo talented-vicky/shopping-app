@@ -129,4 +129,3 @@ mongoose.connect(database_connection_url)
     .catch(err => {
         console.log(err)
     })
-

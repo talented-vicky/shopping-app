@@ -27,6 +27,22 @@
                     </article>
                 <% }) %>
             </div>
+            <section class="pagination">
+                <!-- <a href="/?page=1">1</a> this would always yield 1 even on 1st page -->
+                <% if(currentPage != 1) { %>
+                    <a href="/?page=1">1</a>
+                <% } %>
+                <% if(prevPage && prevPage != 1) { %>
+                    <a href="/?page=<%= prevPage %>"><%= prevPage %></a>
+                <% } %>
+                <a href="/?page=<%= currentPage %>" class="active"><%= currentPage %></a>
+                <% if(hasNextpage) { %>
+                    <a href="/?page=<%= nextPage %>"><%= nextPage %></a>
+                <% } %>
+                <% if(currentPage != lastPage && currentPage != semilastPage) { %>
+                    <a href="/?page=<%= lastPage %>"><%= lastPage %></a>
+                <% } %>
+            </section>
         <% } else { %>
             <h1>No  Products Entered</h1>
         <% } %>

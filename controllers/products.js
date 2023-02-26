@@ -3,6 +3,7 @@ const Order = require('../models/order')
 const fs = require('fs')
 const path = require('path')
 const pdfDoc = require('pdfkit')
+
 const urlPathDelete = require('../helper/url')
 
 const { validationResult } = require('express-validator')
@@ -12,6 +13,7 @@ const technicalErrorCtr = (nexxx, err) => {
     error.httpStatusCode = 500
     return nexxx(error) 
 }
+const item_per_page = 2;
 /* 
 ADMIN CONTROLLERS
 */
@@ -202,12 +204,30 @@ exports.postDeleteProduct = (req, res, next) => {
 USER CONTROLLERS
 */
 exports.showIndex = (req, res, next) => {
+    const page = +req.query.page || 1//plus ensures I always have an int
+    // fetched from param passed into index.ejs file (value after equal sign)
+    let prodQty;
+
     Product.find()
+        .countDocuments()
+        .then(prodQuantity => {
+            prodQty = prodQuantity
+            return Product.find()
+                .skip((page - 1) * item_per_page)
+                .limit(item_per_page)
+        })
         .then(product => {
             res.render('shop/index', {
                 prods: product, 
                 pageTitle: 'Index Page',
-                path: '/'
+                path: '/',
+                currentPage: page,
+                nextPage: page + 1,
+                prevPage: page - 1,
+                hasNextpage: (page * item_per_page) < prodQty,
+                // hasPrevpage: prodQty < 1,
+                semilastPage: Math.ceil(prodQty / item_per_page) - 1,
+                lastPage: Math.ceil(prodQty / item_per_page)
             })
         })
         .catch(err => technicalErrorCtr(next, err))
