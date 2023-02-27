@@ -78,18 +78,33 @@ exports.postAddProduct = (req, res, next) => {
 }
 
 exports.getMyProduct = (req, res, next) => {
-    Product.find({userId: req.user._id}) // confirming if it's logged in user
-    // check app.js file for user initialization (req.user = user)
-        // .select('title price -_id')
-        // now I'm fetching just title and price, _id is automatically fetched
-        // so I had to exclude it if I didn't want to retrieve it 4rm database
-        // .populate('userId')
-        // the above is now the field I wanna display 4rm what I've selected
+    const page = +req.query.page || 1
+    let prodQty;
+    Product.find()
+        .countDocuments()
+        .then(docCount => {
+            prodQty = docCount
+            return Product.find({userId: req.user._id}) // confirming if it's logged in user
+                    .skip((page - 1) * item_per_page)
+                    .limit(item_per_page)
+            // check app.js file for user initialization (req.user = user)
+            // .select('title price -_id')
+            // now I'm fetching just title and price, _id is automatically fetched
+            // so I had to exclude it if I didn't want to retrieve it 4rm database
+            // .populate('userId')
+            // the above is now the field I wanna display 4rm what I've selected        
+        })
         .then(product => {
             res.render('admin/show-product', {
                 prods: product,
                 pageTitle: 'Admin All Products',
-                path: '/show-product'
+                path: '/show-product',
+                currentPage: page,
+                prevPage: page - 1,
+                nextPage: page + 1,
+                hasNextpage: (page * item_per_page) < prodQty,
+                semilastPage: Math.ceil(prodQty / item_per_page) - 1,
+                lastPage: Math.ceil(prodQty / item_per_page)
             })
         })
         .catch(err => technicalErrorCtr(next, err))
@@ -234,15 +249,31 @@ exports.showIndex = (req, res, next) => {
 }
 
 exports.showProducts = (req, res, next) => {
+    const page = +req.query.page || 1
+    let totalQty;
+        
     Product.find()
-    .then(product => {
-        res.render('shop/product-list', {
-            prods: product, 
-            pageTitle: 'Shop Page',
-            path: '/user-products'
+        .countDocuments()
+        .then(docCount => {
+            totalQty = docCount
+            return Product.find()
+                .skip((page - 1) * item_per_page)
+                .limit(item_per_page)
         })
-    })
-    .catch(err => technicalErrorCtr(next, err))
+        .then(product => {
+            res.render('shop/product-list', {
+                prods: product, 
+                pageTitle: 'Shop Page',
+                path: '/user-products',
+                currentPage: page,
+                prevPage: page - 1,
+                nextPage: page + 1,
+                hasNextpage: (page * item_per_page) < totalQty,
+                semilastPage: Math.ceil(totalQty / item_per_page) - 1,
+                lastPage: Math.ceil(totalQty / item_per_page)
+            })
+        })
+        .catch(err => technicalErrorCtr(next, err))
 }
 
 exports.showSingleProduct = (req, res, next) => {
