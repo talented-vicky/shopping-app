@@ -50,6 +50,6 @@ router.post('/edit-product',
 
 // router.post('/delete-product/:prodId', prodController.postDeleteProduct)
 // didn't use this because then I'd have to use the commented form show-product.ejs file
-router.post('/delete-product', authController, prodController.postDeleteProduct)
+router.delete('/delete-product/:prodId', authController, prodController.deleteProduct)
 
 module.exports = router

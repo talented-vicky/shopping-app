@@ -191,12 +191,11 @@ exports.postEditProduct = (req, res, next) => {
         // mongoose does a bts update anytime we call save on an existing obj
 }
 
-exports.postDeleteProduct = (req, res, next) => {
-    // const productId = req.params.prodId
-    // didn't use this because I didnt's use params but body
-
-    const productId = req.body.prodId
+exports.deleteProduct = (req, res, next) => {
+    // const productId = req.body.prodId
     // fetching prodId from the name field of the hidden input
+    
+    const productId = req.params.prodId
     Product.findById(productId)
         .then(prod => {
             if(!prod){
@@ -207,9 +206,9 @@ exports.postDeleteProduct = (req, res, next) => {
         })
         .then(prod => {
             console.log('product successfully deleted')
-            res.redirect('admin/show-product')
+            res.status(200).json({msg: "delete success!"})
         })
-        .catch(err => technicalErrorCtr(next, err))
+        .catch(err => res.status(500).json({msg: "server error deleting"}));
 }
 
 
