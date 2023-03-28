@@ -4,8 +4,9 @@ const fs = require('fs')
 const path = require('path')
 const pdfDoc = require('pdfkit')
 
-const urlPathDelete = require('../helper/url')
+const stripe = require('stripe')("sk_test_51MqN5FKLUvbrwYJxl03b6yAiHNnjbMvf5NNzd6Pg5jTnzNJ46McbBYQ59Uu42as2S3p5nuRE7ORsSxWFxMaLpROF003yLkYdcH")
 
+const urlPathDelete = require('../helper/url')
 const { validationResult } = require('express-validator')
 
 const technicalErrorCtr = (nexxx, err) => {
@@ -374,6 +375,59 @@ exports.postOrders = (req, res, next) => {
         .catch(err => technicalErrorCtr(next, err))
 }
 
+exports.showCheckoutSuccess = (req, res, next) => {
+
+}
+
+exports.showCheckout = (req, res, next) => {
+    const orderID = req.params.orderId;
+    let sum;
+    let orderDetails;
+    
+    Order.findById(orderID)
+        .then(order => {
+            if(!order){
+                return next(new Error('No order found'))
+            }
+            if(order.user.userId.toString() !== req.user._id.toString()){
+                return next(new Error('Not authorized to checkout'))
+            }
+            orderDetails = order.items;
+            sum = 0;
+            order.items.forEach(o => {
+                sum += o.qty * o.product.price
+            })
+            return stripe.checkout.sessions.create({
+                payment_method_types: ['card'],
+                line_items: orderDetails.map(order => {
+                    return {
+                        name: order.product.title,
+                        description: order.product.description,
+                        amount: Math.round(order.product.price),
+                        currency: 'usd',
+                        quantity: order.qty
+                    }
+                }),
+                success_url: req.protocol + '://' + req.get('host') + '/checkout/success',
+                // translates to 'http://localhost/checkout/success'
+                cancel_url: req.protocol + '://' + req.get('host') + '/checkout/cancel'
+            })
+        })
+        // check back reset password funtionality
+        // fix is definitely be removing apikey from .env variable
+        .then(session => {
+            res.render('shop/checkout', {
+                pageTitle: 'Checkout',
+                path: '/user-checkout',
+                orders: orderDetails,
+                totalsum: sum,
+                sessionId: session.id
+            })
+        })
+        .catch(err => console.log(err))
+        // .catch(err => technicalErrorCtr(next, err))
+}
+
 exports.getInvoice = (req, res, next) => {
     const invoiceID = req.params.invoiceId
     Order.findById(invoiceID)
@@ -430,14 +484,6 @@ exports.getInvoice = (req, res, next) => {
 
             doc.font('Times-Roman').fontSize(16).text('Thank you for shopping with us')
             doc.end()
-
-            // const fileStream = fs.createReadStream(invoicePath)
-            // res.setHeader('Content-type', 'application/pdf') // helps open files in browser as inline (by default)
-            // res.setHeader('Content-Disposition', 'attachement: filename="' + invoiceName + '"') // provides save as option
-            // fileStream.pipe(res) // remember the pipe is a writable stream
-            // piping the file stream into the response which is in turn streamed to 
-            // the browser which contains the data (but in bits or chunks)
-            // this saves chunks of the files into the res object (which is writeable)
         })
         .catch(err => next(err))
 

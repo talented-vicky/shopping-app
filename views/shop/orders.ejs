@@ -17,6 +17,7 @@
                                     <li class="products__list"> <%= prod.product.title %> (<%= prod.qty %>)</li>
                                 <% }) %>
                             </ul>
+                            <a class="btn" href="/checkout/<%= order._id %>">Checkout</a>
                         </li>
                     </div>
                 <% }) %>
