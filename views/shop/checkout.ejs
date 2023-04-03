@@ -7,10 +7,10 @@
     <%- include('../includes/nav.ejs')%>
     <main>
         <ul class="cart__item">
-            <% orders.forEach( order => { %>
+            <% products.forEach( product => { %>
                 <li class="cart__item-list">
-                    <h1><%= order.product.title %> </h1>
-                    <h2>Qty: <%= order.qty%></h2>
+                    <h1><%= product.prodId.title %> </h1>
+                    <h2>Qty: <%= product.qty%></h2>
                 </li>
             <% }) %>
         </ul>

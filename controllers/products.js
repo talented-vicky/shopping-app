@@ -344,22 +344,48 @@ exports.showOrders = (req, res, next) => {
         .catch(err => technicalErrorCtr(next, err))
 }
 
-exports.postOrders = (req, res, next) => {
+// exports.postOrders = (req, res, next) => {
+//     req.user
+//         .populate('cart.items.prodId')
+//         .then(cartItems => {
+//             const products = cartItems.cart.items.map(item => {
+//                 // return {qty: item.qty, product: item.prodId}
+//                 // the above won't give the actual doc I need but just the id
+//                 return {qty: item.qty, product: {...item.prodId._doc}}
+//             })
+//             // console.log(products)
+//             // the above prevents me from doing stuff like =>
+//             // title: cartItems.cart.items.prodId.title
+//             const order = new Order({
+//                 items: products,
+//                 user: {
+//                     userId: req.user, // mongoose knows it'll get just the id
+//                     email: req.user.email
+//                 }
+//             })
+//             return order.save()
+//         })
+//         .then(result => {
+//             return req.user
+//                 .clearCart()
+//                 .then(result => {
+//                     res.redirect('/cart')
+//                 })
+//         })
+//         .catch(err => technicalErrorCtr(next, err))
+// }
+
+exports.showCheckoutSuccess = (req, res, next) => {
     req.user
         .populate('cart.items.prodId')
         .then(cartItems => {
             const products = cartItems.cart.items.map(item => {
-                // return {qty: item.qty, product: item.prodId}
-                // the above won't give the actual doc I need but just the id
                 return {qty: item.qty, product: {...item.prodId._doc}}
             })
-            // console.log(products)
-            // the above prevents me from doing stuff like =>
-            // title: cartItems.cart.items.prodId.title
             const order = new Order({
                 items: products,
                 user: {
-                    userId: req.user, // mongoose knows it'll get just the id
+                    userId: req.user,
                     email: req.user.email
                 }
             })
@@ -369,63 +395,56 @@ exports.postOrders = (req, res, next) => {
             return req.user
                 .clearCart()
                 .then(result => {
-                    res.redirect('/cart')
+                    res.redirect('/order')
                 })
         })
         .catch(err => technicalErrorCtr(next, err))
 }
 
-exports.showCheckoutSuccess = (req, res, next) => {
-
-}
-
 exports.showCheckout = (req, res, next) => {
-    const orderID = req.params.orderId;
     let sum;
-    let orderDetails;
-    
-    Order.findById(orderID)
-        .then(order => {
-            if(!order){
-                return next(new Error('No order found'))
-            }
-            if(order.user.userId.toString() !== req.user._id.toString()){
-                return next(new Error('Not authorized to checkout'))
-            }
-            orderDetails = order.items;
+    let cartProducts;
+    req.user
+        .populate('cart.items.prodId')
+        .then(user => {
+            cartProducts = user.cart.items
+            console.log(cartProducts)
             sum = 0;
-            order.items.forEach(o => {
-                sum += o.qty * o.product.price
+            user.cart.items.forEach(o => {
+                sum += o.qty * o.prodId.price
             })
             return stripe.checkout.sessions.create({
                 payment_method_types: ['card'],
-                line_items: orderDetails.map(order => {
+                line_items: cartProducts.map(cart => {
                     return {
-                        name: order.product.title,
-                        description: order.product.description,
-                        amount: Math.round(order.product.price),
-                        currency: 'usd',
-                        quantity: order.qty
+                        price_data: {
+                            currency: 'usd',
+                            unit_amount: Math.round(cart.prodId.price),
+                            product_data: {
+                                name: cart.prodId.title,
+                                description: cart.prodId.description
+                            }
+                        },
+                        quantity: cart.qty
                     }
                 }),
+                mode: 'payment',
                 success_url: req.protocol + '://' + req.get('host') + '/checkout/success',
                 // translates to 'http://localhost/checkout/success'
                 cancel_url: req.protocol + '://' + req.get('host') + '/checkout/cancel'
             })
         })
-        // check back reset password funtionality
-        // fix is definitely be removing apikey from .env variable
         .then(session => {
             res.render('shop/checkout', {
-                pageTitle: 'Checkout',
+                pageTitle: 'Checkout Page',
                 path: '/user-checkout',
-                orders: orderDetails,
+                products: cartProducts,
                 totalsum: sum,
                 sessionId: session.id
             })
         })
-        .catch(err => console.log(err))
-        // .catch(err => technicalErrorCtr(next, err))
+        .catch(err => technicalErrorCtr(next, err))
+        // .catch(err => console.log(err))
 }
 
 exports.getInvoice = (req, res, next) => {
